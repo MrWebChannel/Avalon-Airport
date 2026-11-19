@@ -8,7 +8,7 @@ The domain model is defined in [`spec/domain-model.md`](spec/domain-model.md).
 | Path | What |
 | --- | --- |
 | `AvalonCore/` | Swift package: domain models, `.avj` loading/saving (Yams), event log, delay rule engine |
-| `AvalonAirport/` | The app: Journey Map, Databoard, Airport Hub, update composer |
+| `AvalonAirport/` | The app: Journey Map, Databoard, Airport Hub (Flight Tower, Lounge, Atlas), update composer |
 | `samples/anti-hustle.avj` | Starting journey, bundled into the app |
 | `AvalonAirport.xcodeproj` | One app target, built for iOS and tvOS |
 
@@ -25,8 +25,17 @@ To run the engine tests:
 cd AvalonCore && swift test
 ```
 
+## What works
+
+- **Flight Tower** (Airport Hub): delay rules, simulated clock, **Read journey YAML** (the live `.avj`),
+  **Append YAML** (paste or open an update package; the delay rules accept or reject it), tower YAML, share `journey.avj` (iPhone/iPad).
+- **Lounge**: private notes, decisions, Concierge access toggle.
+- **Atlas**: mark the destination achieved, which logs `destination_achieved` and records the trip.
+- Everything is saved on the device (`Application Support/Journeys/journey.avj` and `tower.yaml`; caches on Apple TV)
+  and reopened on launch. **Reset to sample journey** in Flight Tower starts over.
+
 ## Trying the delay rules
 
-The sample's first ETA is 21 Nov 2026. In **Airport Hub → Flight Tower**, tap **Advance 1 day** until AH-101
-flips to delayed. The Databoard then shows AH-201 to AH-401 as *Delayed by AH-101*. Then use
-**Post an update** to move AH-101's ETA. The update is rejected unless it has both a reason and a cause.
+In **Airport Hub → Flight Tower**, tap **Advance 1 day** until AH-101 flips to delayed. The Databoard then shows
+AH-201 to AH-401 as *Delayed by AH-101*. Then open **Append YAML**, change `eta:` in the template and tap
+**Append to journey**: it is rejected until both `reason:` and `cause:` are filled in.

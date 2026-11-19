@@ -134,4 +134,80 @@ final class AvalonCoreTests: XCTestCase {
         XCTAssertEqual(rows[3].delayedBy, "AH-101")
         XCTAssertEqual(rows[3].operatorName, "Kole")
     }
+
+    // MARK: Appending YAML
+
+    func testAppendTemplateUpdatePackage() throws {
+        var s = try sample()
+        let flight = try XCTUnwrap(s.flight("FL-101"))
+        let yaml = AVJ.updateTemplate(for: flight, in: s, now: date(2026, 11, 20))
+            .replacingOccurrences(of: "status: scheduled", with: "status: landed")
+        let events = try engine.append(yaml: yaml, to: &s, receivedAt: date(2026, 11, 20))
+        XCTAssertEqual(events.map(\.type), [.flightLanded])
+        XCTAssertEqual(s.updates.count, 1)
+    }
+
+    func testAppendBareUpdateIsRejectedForDelayedFlightWithoutCause() throws {
+        var s = try sample()
+        engine.tick(&s, now: date(2026, 11, 22), towerId: "FT-001")
+        let yaml = """
+        update:
+          id: UP-9
+          flightId: FL-101
+          author: { kind: airline, id: AL-001, operatedBy: agent }
+          statusChange:
+            eta: 2026-11-28
+            reason: Waiting on chapter files
+        """
+        XCTAssertThrowsError(try engine.append(yaml: yaml, to: &s, receivedAt: date(2026, 11, 22))) { error in
+            XCTAssertEqual(error as? UpdateRejection, .missingJustification(missingReason: false, missingCause: true))
+        }
+    }
+
+    func testAppendRefusesSnapshotsAndOtherJourneys() throws {
+        var s = try sample()
+        let snapshotYAML = try AVJ.encodeSnapshot(s, sender: nil, recipient: nil, sentAt: Date())
+        XCTAssertThrowsError(try engine.append(yaml: snapshotYAML, to: &s, receivedAt: Date())) { error in
+            XCTAssertEqual(error as? AppendError, .snapshotNotAppendable)
+        }
+        let other = AVJ.updateTemplate(for: s.flights[0], in: s, now: Date())
+            .replacingOccurrences(of: "journeyId: J-001", with: "journeyId: J-999")
+        XCTAssertThrowsError(try engine.append(yaml: other, to: &s, receivedAt: Date()))
+        XCTAssertThrowsError(try engine.append(yaml: "hello: world", to: &s, receivedAt: Date())) { error in
+            XCTAssertEqual(error as? AppendError, .unrecognised)
+        }
+    }
+
+    func testSnapshotYAMLRoundTripsAfterAppend() throws {
+        var s = try sample()
+        engine.tick(&s, now: date(2026, 11, 22), towerId: "FT-001")
+        let yaml = try AVJ.encodeSnapshot(s, sender: nil, recipient: nil, sentAt: date(2026, 11, 22))
+        let reloaded = try XCTUnwrap(AVJ.decode(yaml: yaml).snapshot)
+        XCTAssertEqual(reloaded.events.map(\.eventHash), s.events.map(\.eventHash))
+        XCTAssertEqual(reloaded.flight("FL-101")?.status, .delayed)
+    }
+
+    func testTowerYAMLRoundTrip() throws {
+        let tower = FlightTower(id: "FT-001", journeyId: "J-001", controllerIds: ["P-001"], activeControllerId: "P-001",
+                                delayRules: DelayRules(graceHours: 12, staleContactDays: 3))
+        XCTAssertEqual(try FlightTower.decode(yaml: tower.yaml()), tower)
+    }
+
+    // MARK: Lounge and Atlas
+
+    func testLoungeAndArrival() throws {
+        var s = try sample()
+        s.ensureLounge()
+        XCTAssertEqual(s.lounge?.memberIds, ["P-001", "P-002"])
+        s.addDecision(title: "Cut chapter 9", rationale: "Repeats chapter 4", approvedBy: "P-001", at: date(2026, 11, 20))
+        XCTAssertEqual(s.lounge?.decisions.first?.id, "DC-001")
+
+        let event = s.arrive(at: date(2026, 12, 12), actor: ActorRef(kind: .passenger, id: "P-001"), summary: "Done")
+        XCTAssertEqual(event?.type, .destinationAchieved)
+        XCTAssertEqual(s.journey.status, .arrived)
+        XCTAssertEqual(s.destination?.status, .achieved)
+        XCTAssertEqual(s.atlas.first?.repositoryIds, ["R-001"])
+        XCTAssertNil(s.arrive(at: date(2026, 12, 13), actor: ActorRef(kind: .passenger, id: "P-001"), summary: nil),
+                     "arriving twice does nothing")
+    }
 }

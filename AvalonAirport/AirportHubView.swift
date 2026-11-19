@@ -8,6 +8,21 @@ struct AirportHubView: View {
 
     var body: some View {
         List {
+            Section {
+                HubButton(title: "Flight Tower", detail: "Rules, clock, read and append the journey YAML",
+                          systemImage: "antenna.radiowaves.left.and.right") {
+                    FlightTowerView(snapshot: snapshot)
+                }
+                HubButton(title: "Lounge", detail: "Private notes and decisions for passengers",
+                          systemImage: "sofa") {
+                    LoungeView(snapshot: snapshot)
+                }
+                HubButton(title: "Atlas", detail: "Arrive at the destination and keep the record",
+                          systemImage: "globe.americas") {
+                    AtlasView(snapshot: snapshot)
+                }
+            }
+
             if let destination = snapshot.destination {
                 Section("Destination") {
                     VStack(alignment: .leading, spacing: 4) {
@@ -27,21 +42,6 @@ struct AirportHubView: View {
                 LabeledContent("Complete", value: "\(Int((snapshot.completion * 100).rounded()))%")
                 LabeledContent("Flights", value: "\(snapshot.flights.count)")
                 LabeledContent("Delayed", value: "\(store.boardRows.filter(\.isDelayed).count)")
-            }
-
-            Section {
-                LabeledContent("Tower clock") {
-                    Text(store.now, format: .dateTime.month(.abbreviated).day().hour().minute())
-                }
-                Button("Advance 1 day") { store.advanceClock(days: 1) }
-                Button("Advance 1 week") { store.advanceClock(days: 7) }
-                if store.clockOffsetDays != 0 {
-                    Button("Back to real time") { store.resetClock() }
-                }
-            } header: {
-                Text("Flight Tower")
-            } footer: {
-                Text("Flights flip to delayed once their ETA day passes. Delays already logged stay in the log.")
             }
 
             Section("Updates") {
@@ -80,12 +80,34 @@ struct AirportHubView: View {
                     EventRow(event: event, snapshot: snapshot)
                 }
             }
-
-            Section {
-                Button("Reload sample journey", role: .destructive) { store.loadSample() }
-            }
         }
         .navigationTitle("Airport Hub")
+    }
+}
+
+private struct HubButton<Content: View>: View {
+    let title: String
+    let detail: String
+    let systemImage: String
+    @ViewBuilder let destination: () -> Content
+
+    var body: some View {
+        NavigationLink {
+            destination()
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: systemImage)
+                    .font(.title2)
+                    .foregroundStyle(.black)
+                    .frame(width: 48, height: 48)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.amber))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.headline)
+                    Text(detail).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 4)
+        }
     }
 }
 

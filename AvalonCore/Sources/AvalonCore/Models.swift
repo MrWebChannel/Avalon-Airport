@@ -428,6 +428,14 @@ public struct Decision: Codable, Hashable, Identifiable, Sendable {
     public var rationale: String?
     public var approvedBy: String?
     public var at: Date?
+
+    public init(id: String, title: String, rationale: String?, approvedBy: String?, at: Date?) {
+        self.id = id
+        self.title = title
+        self.rationale = rationale
+        self.approvedBy = approvedBy
+        self.at = at
+    }
 }
 
 /// Private space for passengers. Airlines never see it.
@@ -436,8 +444,19 @@ public struct Lounge: Codable, Hashable, Identifiable, Sendable {
     public var journeyId: String?
     @DefaultEmpty public var memberIds: [String]
     public var conciergeAccess: Bool?
+    /// MVP: plain notes, newest last.
     @DefaultEmpty public var conversations: [String]
     @DefaultEmpty public var decisions: [Decision]
+
+    public init(id: String, journeyId: String?, memberIds: [String], conciergeAccess: Bool? = false,
+                conversations: [String] = [], decisions: [Decision] = []) {
+        self.id = id
+        self.journeyId = journeyId
+        self.memberIds = memberIds
+        self.conciergeAccess = conciergeAccess
+        self.conversations = conversations
+        self.decisions = decisions
+    }
 }
 
 // MARK: - Atlas
@@ -451,6 +470,18 @@ public struct AtlasEntry: Codable, Hashable, Identifiable, Sendable {
     public var completedAt: Date?
     public var summary: String?
     @DefaultEmpty public var repositoryIds: [String]
+
+    public init(id: String, journeyId: String?, destinationId: String?, title: String?,
+                startedAt: Date?, completedAt: Date?, summary: String?, repositoryIds: [String] = []) {
+        self.id = id
+        self.journeyId = journeyId
+        self.destinationId = destinationId
+        self.title = title
+        self.startedAt = startedAt
+        self.completedAt = completedAt
+        self.summary = summary
+        self.repositoryIds = repositoryIds
+    }
 }
 
 // MARK: - Light objects (reserved)
