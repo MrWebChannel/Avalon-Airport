@@ -1,0 +1,97 @@
+journeyPackage:
+  schemaVersion: 0.2
+  kind: snapshot
+  journeyId: J-001
+  sender: { kind: passenger, id: P-001 }
+  recipient: { kind: passenger, id: P-001 }
+  sentAt: 2026-11-18T19:00:00-08:00
+  lastEventHash:
+  body:
+    journey:
+      id: J-001
+      title: Anti-Hustle Handbook
+      description: Condense the ~121,000-word rough draft into a companion handbook under 150 pages
+      destinationId: D-001
+      status: active
+      passengerIds: [P-001, P-002]
+      flightIds: [FL-101, FL-201, FL-301, FL-401]
+      repositoryIds: [R-001]
+      loungeId: LG-001
+      createdAt: 2026-11-18T18:00:00-08:00
+
+    destination:
+      id: D-001
+      title: Handbook Manuscript Ready
+      successCriteria:
+        - Under 150 pages
+        - Voice and editing pass complete
+        - Approved by the client
+      status: active
+
+    passengers:
+      - id: P-001
+        displayName: Kole
+        role: passenger
+      - id: P-002
+        displayName: HCS Partner
+        role: passenger
+
+    airlines:
+      - id: AL-001
+        name: Manuscript Agent
+        type: editorial
+
+    flights:
+      - id: FL-101
+        code: AH-101
+        title: Organize manuscript folders
+        airlineId: AL-001
+        kind: flight
+        status: scheduled
+        originalEta: 2026-11-21
+        eta: 2026-11-21
+        dependsOn: []
+      - id: FL-201
+        code: AH-201
+        title: Triage draft (keep, cut, merge)
+        airlineId: AL-001
+        kind: flight
+        status: scheduled
+        originalEta: 2026-11-26
+        eta: 2026-11-26
+        dependsOn: [FL-101]
+      - id: FL-301
+        code: AH-301
+        title: Condense chapters to page target
+        airlineId: AL-001
+        kind: flight
+        status: scheduled
+        originalEta: 2026-12-05
+        eta: 2026-12-05
+        dependsOn: [FL-201]
+      - id: FL-401
+        code: AH-401
+        title: Voice pass and approval
+        airlineId:
+        kind: customs
+        holder: { kind: passenger, id: P-001 }
+        status: scheduled
+        originalEta: 2026-12-12
+        eta: 2026-12-12
+        dependsOn: [FL-301]
+
+    repositories:
+      - id: R-001
+        provider: dropbox
+        path: /Avalon/AntiHustle
+        mode: read-only
+        ownerPassengerId: P-001
+
+    events:
+      - id: EV-0001
+        type: journey_created
+        actor: { kind: passenger, id: P-001, operatedBy: human }
+        reportedAt: 2026-11-18T18:00:00-08:00
+        receivedAt: 2026-11-18T18:00:00-08:00
+        previousEventHash:
+        eventHash:
