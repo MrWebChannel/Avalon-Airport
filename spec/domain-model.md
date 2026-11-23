@@ -1,257 +1,98 @@
-# Avalon Airport — Domain Model v0.2
+# Avalon Airport — Domain Model v0.3
 
-Baseline: Copilot "Domain Model v0.1", revised with Claude on 2026-11-18.
-This file is the single source of truth. Code, prompts and other AI tools read from it.
+Baseline: v0.2 (2026-11-18), revised with Claude on 2026-11-22 to match the "Domain Model v0.3" area of the Miro board.
+This file is the single source of truth. Code, prompts and other AI tools read from it. Code lives in `AvalonCore/`.
 
 ## Principles
 
-1. **The client owns the airport.** Providers (Airlines) operate flights; they never own journeys.
-2. **One writer.** Exactly one device, the active controller's, writes the journey. Everyone else sends updates to it.
-3. **Status, not substance.** Avalon carries status, ETAs and references. Documents stay in the client's own storage (Dropbox, Box, Google Drive, iCloud).
-4. **Nothing is overwritten.** Every change is an Event in a hash-chained, append-only log.
-5. **Bottlenecks are always visible.** Every delay names who or what is holding the flight.
-6. **Built for agents too.** A provider may be a person or an AI agent acting for the firm. Both use the same `.avj` files.
+1. **The client owns the airport.** Airlines (service providers) operate flights; they never own journeys.
+2. **Only the FlightTower persists Journey state.** It lives on the active controller's device. Everyone else proposes.
+3. **Humans retain authority. Agents provide recommendations.** Captains and Co-Captains commit; crew, plugins and the Concierge submit Proposals.
+4. **A human reviews every document.** Providers send deliverables to the Captain through their own channel. Avalon carries only the notice. No Airline, Pilot or agent gets write access to the Captain's storage.
+5. **Nothing is overwritten.** Every change is an Event in a hash-chained, append-only log.
+6. **Bottlenecks are always visible.** Every delay names who or what is holding the flight, including the Captain.
+7. **Built for agents too.** A crew member may be a person or an AI agent acting for its Airline. Both only propose.
 
-## MVP objects
+## Hierarchy
 
-Implemented now: Journey, Destination, Passenger, FlightTower, BoardingPass, Flight, Event, Update, Repository, Lounge, Atlas, JourneyPackage.
-Defined but light: Airport, Airline, Hub, Route, Concierge.
+Hub (subject domain) → Airport (trusted ecosystem) → Airline (service provider, the firm) → Flight (reusable service offering) → BoardingPass (one instance of a Flight inside a Journey).
 
-### Journey
+HCS hubs: Business Accelerators, Human Transformation, Society and Technology, Organizational Navigators. A PSF hub has the same structure (e.g. Financial Freedom, Physical Health, Home Repair).
 
-```yaml
-journey:
-  id: J-001
-  title: Anti-Hustle Handbook
-  description: Condense the rough draft into a companion handbook
-  destinationId: D-001
-  status: active            # active | paused | arrived | abandoned
-  flightTowerId: FT-001
-  passengerIds: [P-001, P-002]
-  flightIds: [FL-101, FL-201, FL-301, FL-401]
-  airportIds: []
-  repositoryIds: [R-001]
-  loungeId: LG-001
-  createdAt: 2026-11-18T18:00:00-08:00
-  updatedAt:
-# completion % is COMPUTED from flight states, never stored
-```
+## The pipeline
 
-### Destination
+Plugin → Finding → Proposal → Captain approves (or an auto-approve rule) → GroundCrew runs the action → ActionRecord → Event.
 
-```yaml
-destination:
-  id: D-001
-  title: Handbook Manuscript Ready
-  description:
-  successCriteria: []
-  status: active            # active | achieved
-  achievedAt:
-  image:                    # photo or generated image shown on arrival
-```
+## Roles
 
-### Passenger
+| Role | Lives on | Can propose | Can commit / write |
+|---|---|---|---|
+| Captain | FlightTower | Yes | Yes |
+| Co-Captain | FlightTower | Yes | Yes |
+| Passenger | FlightTower | No | No |
+| Observer | FlightTower | No | No |
+| Pilot | BoardingPass (crew) | Yes | No |
+| Co-Pilot | BoardingPass (crew) | Yes | No |
+| Crew | BoardingPass (crew) | Yes (limited) | No |
 
-A human on the journey. Roles here describe relationship only; control lives in FlightTower.
+Crew `kind`: human or agent.
 
-```yaml
-passenger:
-  id: P-001
-  displayName:
-  role: passenger           # passenger | observer | family | caregiver
-  identityProvider: { type: apple }
-  contact: { email:, phone: }   # never sent to providers unless the tower allows it
-  boardingPassIds: []
-```
+## Objects (see `AvalonCore/Sources/AvalonCore/Models.swift` for every field)
 
-### FlightTower
+**Product (sellable):** HubPackage (content refs, JourneyTemplates, Flights, plugins, Airports, Airlines, customizedFor), JourneyTemplate (ordered steps: an Airline's Flight or a Customs step), Flight (template), Plugin (PluginDescriptor).
 
-Governance for one journey. Replaces "owner." **Lives only on the active controller's device. Never written to a repository and never included in a package.**
+**Journey:** Journey, Destination, BoardingPass (kind flight or customs; status, ETAs, waitingOn, dependsOn, crew, waypoints, deliverables, pluginIds), Waypoint, Deliverable (sent → received → reviewed → filed), Repository (a folder in the Captain's storage, via a Connector), Lounge (members only), AtlasEntry (reserved).
 
-```yaml
-flightTower:
-  id: FT-001
-  journeyId: J-001
-  controllerIds: [P-001]        # one or more co-owners
-  activeControllerId: P-001     # the single device that writes
-  boardingPassIds: [BP-001, BP-002]
-  visibility:                   # per boarding pass, see BoardingPass.visibility
-    default: restricted
-  delayRules:
-    graceHours: 0               # flight flips to delayed this long after ETA passes
-    staleContactDays: 7         # "no contact from aircraft" after this many days without an update
-  notificationPolicy: { enabled: true }
-  repositoryPolicy: { mode: read-only }
-```
+**Governance (device only):** FlightTower (controllers, autoApproveRules, hosts PluginEngine and GroundCrew), Credential (journey access: permissions read/propose/invite/observe, scope, keyCode, expiry), StorageGrant (read-only folder access tied to a Credential, expires at landing), Connector (storage or calendar; MVP uses the iOS Files app and the device calendar), Proposal (replaces Update), ActionRequest.
 
-### BoardingPass
+**Log:** Event (immutable, hash-chained), StatusChange, ActionRecord, Finding, Manifest (`.avj`, renamed from JourneyPackage).
 
-Invitation and permission grant, issued by the tower. Delivered as a link or a flight ID plus key code.
+## Plugins
 
-```yaml
-boardingPass:
-  id: BP-002
-  issuedBy: FT-001
-  journeyId: J-001
-  recipient:
-    kind: airline               # passenger | airline
-    id: AL-001
-  permissions: [read, update]   # read | update | invite | observe
-  visibility:                   # what this recipient's packages contain
-    flights: [FL-101, FL-201, FL-301]   # or "all"
-    showOtherAirlines: names-only       # none | names-only | status
-    showPassengerContact: false
-    lounge: false               # airlines can never see the Lounge
-  keyCode:
-  expiresAt:
-  status: active                # active | revoked | expired
-```
+- One **PluginEngine** inside the FlightTower. It verifies package plugin signatures, loads the plugins of the boarding pass being evaluated (plugins ride on one Flight), runs them on triggers (onProposal, onEvent, onAppOpen, onSchedule) and collects Findings.
+- **PluginType** and run order: security → analytics → contentBehavior.
+  - security: block, warning, info
+  - analytics: warning, info, may raise a Proposal
+  - contentBehavior: info and recommendation only
+- Once a security plugin blocks, later types do not run.
+- **Tiers:** default (ships in the app, always wins) and package (arrives in a HubPackage). A package plugin can add rules but never replace or weaken a default.
+- **Defaults:** Security (permissions, credentials, access control, delay accountability), Flight checks (pre-flight, in-flight, landing; security type because it holds flights), Delay rules (analytics; settings graceHours, staleContactDays).
+- Package plugins are YAML settings plus a JavaScript `evaluate(context)` function run in JavaScriptCore with nothing bridged in. They return Findings only.
 
-### Flight
+## Delay rules (default Delay plugin)
 
-A unit of responsibility and progress.
+1. Past ETA + graceHours and not landed, closed or cancelled: the plugin raises a Proposal to mark the flight delayed; the `delayRule` auto-approves it.
+2. No update for staleContactDays: "No contact from aircraft."
+3. Changing the ETA of a delayed flight, or clearing the delay, needs a reason and a cause (enforced by the Security plugin, which may block).
+4. Blame follows waitingOn, not the airline by default.
+5. Every flight downstream on the dependsOn chain shows "Delayed by XX-nnn".
 
-```yaml
-flight:
-  id: FL-201
-  journeyId: J-001
-  code: AH-201                  # shown on the flight board
-  title: Triage draft
-  airlineId: AL-001
-  kind: flight                  # flight | customs (a checkpoint held by a passenger or authority)
-  status: scheduled
-  originalEta: 2026-11-25
-  eta: 2026-11-25
-  departedAt:
-  landedAt:
-  lastContactAt:
-  dependsOn: [FL-101]           # flights that must land first
-  waitingOn:                    # who or what is holding this flight right now; null when moving
-    kind:                       # passenger | document | flight | airline | external
-    ref:
-    since:
-  deliverables: []              # references into the Repository
-```
+## Flight checks (default plugin)
 
-**Flight states:** proposed, scheduled, boarding, departed, in-flight, holding, delayed, landed, closed, cancelled.
+- Pre-flight: previous flights landed, their deliverables filed by the Captain, a Pilot assigned, an ETA set.
+- In-flight: overdue waypoints.
+- Landing: deliverable sent; Captain review pending.
 
-### Delay rules (run on the controller's device)
+## Handoff rule
 
-1. If `now > eta + graceHours` and the status is not landed, closed or cancelled, the flight becomes **delayed**. The tower records a `flight_delayed` event with actor `tower`.
-2. If `now - lastContactAt > staleContactDays`, the board shows **"No contact from aircraft."**
-3. **A provider cannot change the ETA of a delayed flight, or clear the delay, without:**
-   - `reason`: free text, required
-   - `cause`: one of passenger, document, flight, airline, external, required
-   The update is rejected if either is missing.
-4. The blame shown on the board follows `waitingOn`, not the airline by default. A flight waiting on the client shows the client as the bottleneck.
-5. Every flight on a delayed flight's `dependsOn` chain shows **"Delayed by AH-xxx"**.
+A deliverable that changes firms or needs the Captain's approval is a new BoardingPass or a Customs step. Progress inside one firm is a Waypoint. When a deliverable is sent, the flights that depend on it wait on the Captain until she files it.
 
-### Event
+## Storage and privacy
 
-Immutable history. Never edited, never deleted.
+- StorageGrants are read-only, folder-scoped, created only by GroundCrew after approval, expire when their boarding pass lands, and every grant and revocation is an Event.
+- Agents the Captain points at her own storage (Dash or others) are her choice, outside Avalon.
+- Snapshots sent to providers never include the Lounge, member contacts, credentials or grants. Other airlines' flights show code, status and ETA only, never titles.
 
-```yaml
-event:
-  id: EV-0007
-  journeyId: J-001
-  flightId: FL-201
-  actor: { kind: airline, id: AL-001, operatedBy: agent }   # operatedBy: human | agent | tower
-  type: eta_changed
-  reportedAt: 2026-11-26T09:12:00-08:00   # when the sender says it happened
-  receivedAt: 2026-11-26T09:14:31-08:00   # when the controller's device logged it
-  payload:
-    previousEta: 2026-11-25
-    newEta: 2026-11-28
-    reason: Waiting on chapter files from client
-    cause: passenger
-  previousEventHash:
-  eventHash:
-  signature:
-```
+## Actions (GroundCrew catalog)
 
-**Event types:** journey_created, flight_created, flight_assigned, flight_departed, eta_changed, flight_delayed, flight_landed, flight_cancelled, waiting_on_changed, boarding_pass_issued, boarding_pass_revoked, airline_joined, tower_transferred, destination_achieved.
+notify, addCalendarEvent, updateEta, remindCustoms, verifyDeliverable, shareFolderLink, revokeFolderLink, issueCredential, revokeCredential. Only approved actions run, re-running one is harmless, and access actions can only come from a Captain or Co-Captain.
 
-### Update
+## Manifest (`.avj`)
 
-A human-readable message. May carry a status change, which produces Events.
+YAML file traded by Messages, email or AirDrop. `snapshot` goes from the tower to a credential holder, filtered by that credential. `proposal` comes back carrying the credential id and key code; the tower takes identity from the credential, not from the file.
 
-```yaml
-update:
-  id: UP-001
-  journeyId: J-001
-  flightId: FL-201
-  author: { kind: airline, id: AL-001, operatedBy: agent }
-  reportedAt:
-  message: |
-    Triage complete for chapters 1–6.
-  statusChange:                 # optional
-    status:
-    eta:
-    reason:                     # required when the flight is delayed
-    cause:                      # required when the flight is delayed
-```
+## MVP limits
 
-### Repository
-
-```yaml
-repository:
-  id: R-001
-  provider: dropbox             # dropbox | box | gdrive | onedrive | icloud
-  path: /Avalon/AntiHustle
-  mode: read-only               # for providers
-  ownerPassengerId: P-001
-```
-
-### Lounge
-
-Private space for passengers. Airlines never see it.
-
-```yaml
-lounge:
-  id: LG-001
-  journeyId: J-001
-  memberIds: [P-001, P-002]
-  conciergeAccess: false        # client opts in
-  conversations: []
-  decisions: []                 # { id, title, rationale, approvedBy, at }
-```
-
-### Atlas and AtlasEntry
-
-```yaml
-atlasEntry:
-  id: AE-001
-  journeyId: J-001
-  destinationId: D-001
-  title:
-  startedAt:
-  completedAt:
-  summary:
-  repositoryIds: []
-```
-
-### JourneyPackage (`.avj`)
-
-The file traded between devices by Messages, email or AirDrop. Each package is filtered by the recipient's BoardingPass.
-
-```yaml
-journeyPackage:
-  schemaVersion: 0.2
-  kind: snapshot                # snapshot (controller → others) | update (provider → controller)
-  journeyId: J-001
-  sender: { kind:, id: }
-  recipient: { kind:, id: }
-  sentAt:
-  lastEventHash:                # lets the receiver detect gaps
-  body: {}                      # snapshot: filtered journey; update: one Update
-```
-
-### Light objects (reserved)
-
-```yaml
-airline:  { id:, name:, type:, contact: { email:, phone: } }
-airport:  { id:, name:, ownerAirlineId:, airlineIds: [] }
-hub:      { id:, name:, airportIds: [] }
-route:    { id:, sourceAirportId:, destinationAirportId:, relationshipType: }
-concierge:{ id:, enabled: false, capabilities: [] }
-```
+- One active BoardingPass per Journey at a time (dependsOn kept for later parallel flights).
+- One Hub per Journey; mixing Hubs comes later.
+- Folder shares: the iOS Files connector cannot create provider share links, so the Captain is asked to share the folder in her storage app; the grant is still recorded, expires and is logged.
