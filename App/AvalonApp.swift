@@ -18,6 +18,8 @@ struct AvalonApp: App {
 struct AppShell: View {
     @Environment(AppModel.self) private var model
     @State private var showSplash = true
+    /// Launch argument used by the GitHub screenshot check to keep the splash on screen.
+    private let holdSplash = ProcessInfo.processInfo.arguments.contains("-holdSplash")
 
     var body: some View {
         ZStack {
@@ -30,6 +32,7 @@ struct AppShell: View {
                     .zIndex(1)
                     .onTapGesture { hideSplash() }
                     .task {
+                        if holdSplash { return }
                         // If this view is torn down early the sleep throws; only hide after a full wait.
                         do { try await Task.sleep(for: .seconds(2.5)) } catch { return }
                         hideSplash()
