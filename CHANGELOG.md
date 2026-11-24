@@ -2,6 +2,15 @@
 
 One entry per build, newest first. The build number matches `AvalonVersion.build` and the splash screen.
 
+## Build 4 · 2026-11-23 · Claude
+
+- Dark mode throughout, including system screens.
+- Launch screen is dark navy (no white flash) and leads straight into the splash.
+- Splash fixed: the 3-second countdown only runs while the app is on screen and active, so a slow launch under Xcode no longer uses it up. Tap to skip.
+- The notification permission prompt now appears when you start a journey, not over the splash.
+- GitHub launches the app in an iPhone simulator on every pull request and records screenshots of the launch.
+- **Test:** the splash should show **Build 4** for about 3 seconds after the navy launch screen.
+
 ## Build 3 · 2026-11-23 · Claude
 
 - The Xcode project now lives in the repo: `AvalonApp/Avalon.xcodeproj`. Open it instead of creating one by hand. It syncs the `App/` folder automatically, links AvalonCore, and includes the calendar permission and the `.avj` file type.
