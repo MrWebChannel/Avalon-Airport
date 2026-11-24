@@ -20,3 +20,27 @@ jobs:
       - name: Demo
         working-directory: AvalonCore
         run: swift run avalon-demo
+
+  app:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile the app screens for iOS
+        run: |
+          mkdir -p AppCheck/Sources/AvalonAppCheck
+          cp App/*.swift AppCheck/Sources/AvalonAppCheck/
+          cat > AppCheck/Package.swift <<'PKG'
+          // swift-tools-version: 5.9
+          import PackageDescription
+          let package = Package(
+              name: "AvalonAppCheck",
+              platforms: [.iOS(.v17)],
+              dependencies: [.package(path: "../AvalonCore")],
+              targets: [.executableTarget(name: "AvalonAppCheck",
+                                          dependencies: [.product(name: "AvalonCore", package: "AvalonCore")])]
+          )
+          PKG
+          cd AppCheck
+          xcodebuild -scheme AvalonAppCheck -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build | tail -40
+          exit ${PIPESTATUS[0]}

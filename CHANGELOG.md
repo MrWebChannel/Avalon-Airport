@@ -2,6 +2,18 @@
 
 One entry per build, newest first. The build number matches `AvalonVersion.build` and the splash screen.
 
+## Build 2 · 2026-11-23 · Claude
+
+- Splash screen: fixed colors (white on dark blue) so the text is always visible, and the build number is now the largest line.
+- Bottom navigation is now **Hub, Tower, Journey, Lounge**.
+  - Hub: the Airport Hub (hubs and packages) plus Provider mode.
+  - Tower: Dashboard (flight board), Inbox, Documents, Atlas and Settings, switched at the top.
+  - Journey: the journey map, each flight as a stop on the way to the destination.
+  - Lounge: private conversation for tower members; airlines never see it.
+- Engine (core 0.3.2): Atlas entries recorded at arrival, Lounge posting for members only. 25 tests.
+- **Test:** pull, run, check the splash says Build 2; open each tab.
+- **No new files in App/.**
+
 ## Build 1 · 2026-11-23 · Claude
 
 - Domain model v0.3: AvalonCore engine (FlightTower, PluginEngine, GroundCrew, default plugins Security, Flight checks and Delay), `.avj` manifests, sample hubs and the Protected Estate package.

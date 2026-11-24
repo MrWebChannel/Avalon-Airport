@@ -47,6 +47,12 @@ final class AppModel {
     var actionRecords: [ActionRecord] { _ = version; return tower.map { Array($0.state.actionRecords.reversed()) } ?? [] }
     var snapshots: [Manifest] { _ = version; return providerSnapshots }
     var acting: TowerMember? { journey?.member(actingMemberId) }
+    var atlas: [AtlasEntry] { _ = version; return tower?.atlasEntries ?? [] }
+    var loungeMessages: [LoungeMessage] { _ = version; return tower?.loungeMessages ?? [] }
+
+    func postToLounge(_ text: String) {
+        perform { t in try t.postToLounge(text, by: actingMemberId) }
+    }
 
     func findings(for bpId: String) -> [Finding] {
         _ = version
