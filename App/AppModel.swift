@@ -27,7 +27,6 @@ final class AppModel {
     private var snapshotsURL: URL { URL.documentsDirectory.appending(path: "avalon-provider-snapshots.json") }
 
     init() {
-        notifier.requestAuthorization()
         load()
     }
 
@@ -80,6 +79,7 @@ final class AppModel {
         tower = FlightTower.create(from: template, in: package, title: title.isEmpty ? nil : title,
                                    captain: captain, others: others, start: Date(), services: services)
         actingMemberId = captain.id
+        notifier.requestAuthorization()   // asked when a journey starts, not at launch
         save()
         version += 1
     }

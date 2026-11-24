@@ -23,11 +23,36 @@ jobs:
 
   app:
     runs-on: macos-15
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Build the iOS app (Xcode project)
+      - name: Build the iOS app and screenshot the launch
         run: |
           xcodebuild -version
-          xcodebuild -project AvalonApp/Avalon.xcodeproj -scheme Avalon \
-            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build | tail -40
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "Simulator $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b > /dev/null
+          xcodebuild -project AvalonApp/Avalon.xcodeproj -scheme Avalon -destination "id=$UDID" \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -30
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Avalon.app
+          START=$(python3 -c 'import time; print(time.time())')
+          (xcrun simctl launch "$UDID" studio.hcs.avalon > /dev/null &)
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            xcrun simctl io "$UDID" screenshot "t$i.png" > /dev/null 2>&1
+            python3 -c "import time; print('t$i at %.1fs' % (time.time() - $START))"
+            sleep 0.3
+          done
+          xcrun simctl terminate "$UDID" studio.hcs.avalon || true
+          xcrun simctl launch "$UDID" studio.hcs.avalon -holdSplash > /dev/null
+          sleep 3; xcrun simctl io "$UDID" screenshot hold.png
+          for f in t1 t3 t5 t8 t12 hold; do
+            [ -f "$f.png" ] || continue
+            sips -s format jpeg -s formatOptions 50 -Z 480 "$f.png" --out "$f.jpg" > /dev/null
+            echo "BEGIN_SHOT_$f"; base64 -i "$f.jpg" | fold -w 900; echo "END_SHOT_$f"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launch-screenshots
+          path: "*.png"

@@ -4,27 +4,47 @@ import AvalonCore
 @main
 struct AvalonApp: App {
     @State private var model = AppModel()
-    @State private var showSplash = true
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                RootView()
-                    .environment(model)
-                    .onOpenURL { url in model.importManifest(from: url) }
-                    .task { model.appOpened() }
-                if showSplash {
-                    SplashView()
-                        .transition(.opacity)
-                        .onTapGesture { withAnimation { showSplash = false } }
-                        .zIndex(1)
-                }
-            }
-            .task {
-                try? await Task.sleep(for: .seconds(2))
-                withAnimation(.easeOut(duration: 0.4)) { showSplash = false }
+            AppShell()
+                .environment(model)
+                .preferredColorScheme(.dark)
+        }
+    }
+}
+
+/// Shows the splash (with the build number) over the app on every launch.
+struct AppShell: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var showSplash = true
+    /// Launch argument used by the GitHub screenshot check to keep the splash on screen.
+    private let holdSplash = ProcessInfo.processInfo.arguments.contains("-holdSplash")
+
+    var body: some View {
+        ZStack {
+            RootView()
+                .onOpenURL { url in model.importManifest(from: url) }
+                .task { model.appOpened() }
+            if showSplash {
+                SplashView()
+                    .transition(.opacity)
+                    .zIndex(1)
+                    .onTapGesture { hideSplash() }
+                    // Counts only while the app is actually on screen and active. If the app goes
+                    // inactive (launching under Xcode, a system prompt), the countdown starts over.
+                    .task(id: scenePhase) {
+                        guard scenePhase == .active, !holdSplash else { return }
+                        do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                        hideSplash()
+                    }
             }
         }
+    }
+
+    private func hideSplash() {
+        withAnimation(.easeOut(duration: 0.4)) { showSplash = false }
     }
 }
 
