@@ -4,27 +4,42 @@ import AvalonCore
 @main
 struct AvalonApp: App {
     @State private var model = AppModel()
-    @State private var showSplash = true
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                RootView()
-                    .environment(model)
-                    .onOpenURL { url in model.importManifest(from: url) }
-                    .task { model.appOpened() }
-                if showSplash {
-                    SplashView()
-                        .transition(.opacity)
-                        .onTapGesture { withAnimation { showSplash = false } }
-                        .zIndex(1)
-                }
-            }
-            .task {
-                try? await Task.sleep(for: .seconds(2))
-                withAnimation(.easeOut(duration: 0.4)) { showSplash = false }
+            AppShell()
+                .environment(model)
+                .preferredColorScheme(.dark)
+        }
+    }
+}
+
+/// Shows the splash (with the build number) over the app on every launch.
+struct AppShell: View {
+    @Environment(AppModel.self) private var model
+    @State private var showSplash = true
+
+    var body: some View {
+        ZStack {
+            RootView()
+                .onOpenURL { url in model.importManifest(from: url) }
+                .task { model.appOpened() }
+            if showSplash {
+                SplashView()
+                    .transition(.opacity)
+                    .zIndex(1)
+                    .onTapGesture { hideSplash() }
+                    .task {
+                        // If this view is torn down early the sleep throws; only hide after a full wait.
+                        do { try await Task.sleep(for: .seconds(2.5)) } catch { return }
+                        hideSplash()
+                    }
             }
         }
+    }
+
+    private func hideSplash() {
+        withAnimation(.easeOut(duration: 0.4)) { showSplash = false }
     }
 }
 

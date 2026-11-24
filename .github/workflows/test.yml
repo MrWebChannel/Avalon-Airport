@@ -23,11 +23,28 @@ jobs:
 
   app:
     runs-on: macos-15
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Build the iOS app (Xcode project)
+      - name: Build the iOS app and screenshot the launch
         run: |
           xcodebuild -version
-          xcodebuild -project AvalonApp/Avalon.xcodeproj -scheme Avalon \
-            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build | tail -40
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "Simulator $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b > /dev/null
+          xcodebuild -project AvalonApp/Avalon.xcodeproj -scheme Avalon -destination "id=$UDID" \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -30
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Avalon.app
+          xcrun simctl launch "$UDID" studio.hcs.avalon
+          sleep 1.5; xcrun simctl io "$UDID" screenshot splash.png
+          sleep 4;   xcrun simctl io "$UDID" screenshot app.png
+          for f in splash app; do
+            sips -s format jpeg -s formatOptions 55 -Z 640 "$f.png" --out "$f.jpg" > /dev/null
+            echo "BEGIN_SHOT_$f"; base64 -i "$f.jpg" | fold -w 900; echo "END_SHOT_$f"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launch-screenshots
+          path: "*.png"

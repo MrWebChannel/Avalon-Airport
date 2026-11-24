@@ -3,6 +3,11 @@
 <!-- Merged with the keys Xcode generates. Declares the .avj file type so Messages, Mail and AirDrop open it in Avalon. -->
 <plist version="1.0">
 <dict>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<false/>
 	<key>UTExportedTypeDeclarations</key>
