@@ -2,14 +2,13 @@ import SwiftUI
 import AvalonCore
 
 /// Shown every time the app loads so the running version is always visible.
-/// App version and build come from the Xcode target (General > Identity); engine and schema come from AvalonCore.
+/// App version comes from the Xcode target; build, engine and schema come from AvalonCore/Version.swift.
 struct SplashView: View {
     static var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
     }
-    static var buildNumber: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
-    }
+    /// Comes from AvalonCore so every pull request's build number shows without touching Xcode settings.
+    static var buildNumber: String { String(AvalonVersion.build) }
     /// One line for the splash and the Tower tab, e.g. "v1.0 (7) · core 0.3.1 · schema 0.3".
     static var versionLine: String {
         "v\(appVersion) (\(buildNumber)) · core \(AvalonVersion.core) · schema \(AvalonVersion.schema)"

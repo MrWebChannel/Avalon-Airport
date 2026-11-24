@@ -44,12 +44,9 @@ The demo shows, in order: a package approved into a journey, crew credentials, a
 
 For a two-device test (you and your HCS partner): run the app on both, start the journey on yours, add your partner as crew, send them the `.avj`, they reply from their Provider tab.
 
-## Version tracking
+## Version tracking and the build loop
 
-A splash screen shows on every launch with the app version and build, the AvalonCore engine version and the schema version (also shown at the top of the Tower tab). Bump them in two places:
-
-- **App version and build:** Xcode → Avalon target → General → Identity (Version, Build). Bump Build on every install you test.
-- **Engine and schema:** `AvalonCore/Sources/AvalonCore/Version.swift`.
+The splash screen shows the build number on every launch (also at the top of the Tower tab). Every change arrives as a pull request that bumps it. See `PROCESS.md` for your steps and `AGENTS.md` for the rules every AI follows.
 
 ## MVP limits
 
