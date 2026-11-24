@@ -1,0 +1,22 @@
+name: Engine checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        working-directory: AvalonCore
+        run: swift build
+      - name: Test
+        working-directory: AvalonCore
+        run: swift test
+      - name: Demo
+        working-directory: AvalonCore
+        run: swift run avalon-demo

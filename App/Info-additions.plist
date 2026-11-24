@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merge these keys into the app target's Info (Xcode: target > Info tab, or Info.plist). -->
+<plist version="1.0">
+<dict>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>Avalon posts flight ETAs and your decision dates to your calendar. Providers never see your calendar.</string>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <false/>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>studio.hcs.avalon.manifest</string>
+            <key>UTTypeDescription</key>
+            <string>Avalon Journey Manifest</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.yaml</string>
+                <string>public.text</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>avj</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Avalon Journey Manifest</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>studio.hcs.avalon.manifest</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
