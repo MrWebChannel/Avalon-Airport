@@ -29,7 +29,7 @@ public struct JourneySnapshot: Codable, Hashable, Sendable {
 }
 
 public struct Manifest: Codable, Hashable, Sendable {
-    public var schemaVersion: String = "0.3"
+    public var schemaVersion: String = AvalonVersion.schema
     public var kind: ManifestKind
     public var journeyId: String
     public var sender: ManifestParty

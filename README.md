@@ -44,6 +44,13 @@ The demo shows, in order: a package approved into a journey, crew credentials, a
 
 For a two-device test (you and your HCS partner): run the app on both, start the journey on yours, add your partner as crew, send them the `.avj`, they reply from their Provider tab.
 
+## Version tracking
+
+A splash screen shows on every launch with the app version and build, the AvalonCore engine version and the schema version (also shown at the top of the Tower tab). Bump them in two places:
+
+- **App version and build:** Xcode → Avalon target → General → Identity (Version, Build). Bump Build on every install you test.
+- **Engine and schema:** `AvalonCore/Sources/AvalonCore/Version.swift`.
+
 ## MVP limits
 
 One journey per device; one active flight at a time; one hub per journey. The Files connector cannot create provider share links, so a folder share asks you to share it in Dropbox/Box/Drive and the grant is still recorded and expires at landing. Package plugin signatures are SHA-256 checks standing in for real code signing.

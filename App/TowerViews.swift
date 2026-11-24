@@ -243,6 +243,9 @@ struct TowerView: View {
     var body: some View {
         @Bindable var model = model
         List {
+            Section("Version") {
+                Text(SplashView.versionLine).font(.footnote.monospaced())
+            }
             if let journey = model.journey {
                 Section("Acting as") {
                     Picker("Member", selection: $model.actingMemberId) {

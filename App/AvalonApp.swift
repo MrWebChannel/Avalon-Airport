@@ -4,13 +4,26 @@ import AvalonCore
 @main
 struct AvalonApp: App {
     @State private var model = AppModel()
+    @State private var showSplash = true
 
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .environment(model)
-                .onOpenURL { url in model.importManifest(from: url) }
-                .task { model.appOpened() }
+            ZStack {
+                RootView()
+                    .environment(model)
+                    .onOpenURL { url in model.importManifest(from: url) }
+                    .task { model.appOpened() }
+                if showSplash {
+                    SplashView()
+                        .transition(.opacity)
+                        .onTapGesture { withAnimation { showSplash = false } }
+                        .zIndex(1)
+                }
+            }
+            .task {
+                try? await Task.sleep(for: .seconds(2))
+                withAnimation(.easeOut(duration: 0.4)) { showSplash = false }
+            }
         }
     }
 }
