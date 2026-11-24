@@ -6,6 +6,7 @@ The client owns the airport; providers operate flights. Domain model v0.3 — se
 spec/domain-model.md      single source of truth (v0.3)
 AvalonCore/               Swift package: model, FlightTower, PluginEngine, GroundCrew, .avj manifests, tests, demo
 App/                      SwiftUI app sources (iPhone and iPad)
+AvalonApp/                the Xcode project (open Avalon.xcodeproj)
 samples/                  sample files (anti-hustle.avj is still in the v0.2 format)
 ```
 
@@ -21,16 +22,13 @@ swift test                 # tests covering the v0.3 rules
 
 The demo shows, in order: a package approved into a journey, crew credentials, a filtered `.avj` snapshot, a `.avj` reply round trip, pre-flight checks holding a flight, a deliverable notice and the Captain filing it, a read-only folder grant, an AI agent blocked from granting itself access, the Delay plugin auto-delaying an overdue flight, delay accountability (reason and cause), the HCS content plugin running in JavaScriptCore, a grant expiring at landing, customs, arrival, and the hash-chained audit trail.
 
-## 2. Run the app on the simulator or your iPhone/iPad (about 5 minutes)
+## 2. Run the app on the simulator or your iPhone/iPad
 
-1. Xcode → File → New → Project → iOS → App. Name `Avalon`, interface SwiftUI, language Swift, no tests. Save it inside this repo as `AvalonApp/`.
-2. Delete the generated `ContentView.swift` and `AvalonApp.swift`.
-3. Drag every `.swift` file from `App/` into the project (check "Copy items if needed" off, target Avalon on).
-4. File → Add Package Dependencies → Add Local… → choose the `AvalonCore` folder → add the `AvalonCore` library to the Avalon target.
-5. Target → General → Minimum Deployments: iOS 17.0.
-6. Target → Info: add the keys in `App/Info-additions.plist` (calendar permission text, and the `.avj` document type so Messages/Mail/AirDrop files open in Avalon).
-7. If Xcode reports actor-isolation errors (newer Xcode templates default to MainActor isolation and Swift 6), set the target's Build Settings → "Default Actor Isolation" to nonisolated and "Swift Language Version" to Swift 5.
-8. Choose a simulator or your device and Run.
+1. In Finder, open the repo folder → **AvalonApp** → double-click **Avalon.xcodeproj**.
+2. Pick a simulator at the top of the Xcode window and press **Cmd-R**.
+3. To run on your own iPhone or iPad: click the blue **Avalon** project → target **Avalon** → **Signing & Capabilities** → choose your Team.
+
+The project is in the repo, so Xcode's **Integrate → Pull** brings every new build. New files in `App/` are picked up automatically.
 
 ### Trying it
 

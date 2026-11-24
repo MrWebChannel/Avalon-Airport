@@ -15,7 +15,7 @@ These rules apply to Claude, ChatGPT, Gemini or any other agent. `CLAUDE.md` and
 
 If the checks fail, fix them on the same branch; do not open a new pull request.
 
-**App files:** the owner's Xcode project lists the files in `App/` one by one. Prefer adding code to existing files. If a new file in `App/` is unavoidable, say so at the top of the pull request so the owner can add it in Xcode (right-click the Avalon folder, Add Files).
+**App files:** `AvalonApp/Avalon.xcodeproj` syncs the `App/` folder automatically, so new `.swift` files there are included without touching the project. Do not edit `project.pbxproj` unless the change needs a new setting, and say so in the pull request.
 
 **Navigation (bottom tabs):** Hub, Tower, Journey, Lounge. The Tower holds Dashboard, Inbox, Documents, Atlas and Settings.
 
@@ -34,6 +34,7 @@ If the checks fail, fix them on the same branch; do not open a new pull request.
 spec/domain-model.md        source of truth for the model
 AvalonCore/                 Swift package: engine, tests, demo (swift run avalon-demo)
 App/                        SwiftUI app sources
+AvalonApp/                  Xcode project (open Avalon.xcodeproj)
 CHANGELOG.md                one entry per build
 PROCESS.md                  the owner's steps (plain language)
 ```

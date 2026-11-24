@@ -7,7 +7,7 @@ GitHub is the one shared shelf. Any AI puts its work there as a **pull request**
 1. **Ask the AI for the change.** Say "follow AGENTS.md". It makes a branch, bumps the build number, and opens a pull request.
 2. **Check the pull request on GitHub.** Open github.com/MrWebChannel/Avalon-Airport → **Pull requests**. Read the summary. Wait for the green check (GitHub compiled and tested the engine). A red X means the AI has more fixing to do; tell it.
 3. **Merge.** Click **Merge pull request**, then **Confirm merge**. That puts the change on `main`.
-4. **Pull it onto your Mac.** In Xcode: **Integrate → Pull**. (Or in GitHub Desktop: **Fetch origin**, then **Pull origin**.)
+4. **Pull it onto your Mac.** In Xcode (with `AvalonApp/Avalon.xcodeproj` open): **Integrate → Fetch Changes**, then **Integrate → Pull** and pick **origin/main**. If Xcode will not pull, open Terminal in the repo folder and type `git pull`.
 5. **Run.** In Xcode press **Cmd-R**. The splash screen shows the build number. If it matches the pull request, you are running the new build.
 6. **If something is wrong,** copy the error or describe what you saw and give it to the same AI. It fixes it in a new build.
 

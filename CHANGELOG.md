@@ -2,6 +2,13 @@
 
 One entry per build, newest first. The build number matches `AvalonVersion.build` and the splash screen.
 
+## Build 3 · 2026-11-23 · Claude
+
+- The Xcode project now lives in the repo: `AvalonApp/Avalon.xcodeproj`. Open it instead of creating one by hand. It syncs the `App/` folder automatically, links AvalonCore, and includes the calendar permission and the `.avj` file type.
+- Xcode's Integrate → Pull now works, because the project is inside the repo.
+- GitHub builds this exact Xcode project for iOS on every pull request.
+- **Test:** open `AvalonApp/Avalon.xcodeproj`, Cmd-R, splash says Build 3.
+
 ## Build 2 · 2026-11-23 · Claude
 
 - Splash screen: fixed colors (white on dark blue) so the text is always visible, and the build number is now the largest line.
