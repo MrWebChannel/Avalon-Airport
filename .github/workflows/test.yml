@@ -36,12 +36,17 @@ jobs:
           xcodebuild -project AvalonApp/Avalon.xcodeproj -scheme Avalon -destination "id=$UDID" \
             -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -30
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Avalon.app
+          START=$(python3 -c 'import time; print(time.time())')
           (xcrun simctl launch "$UDID" studio.hcs.avalon > /dev/null &)
-          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do sleep 0.5; xcrun simctl io "$UDID" screenshot "t$i.png" > /dev/null 2>&1; done
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            xcrun simctl io "$UDID" screenshot "t$i.png" > /dev/null 2>&1
+            python3 -c "import time; print('t$i at %.1fs' % (time.time() - $START))"
+            sleep 0.3
+          done
           xcrun simctl terminate "$UDID" studio.hcs.avalon || true
           xcrun simctl launch "$UDID" studio.hcs.avalon -holdSplash > /dev/null
           sleep 3; xcrun simctl io "$UDID" screenshot hold.png
-          for f in t2 t4 t6 t9 t12 hold; do
+          for f in t1 t3 t5 t8 t12 hold; do
             [ -f "$f.png" ] || continue
             sips -s format jpeg -s formatOptions 50 -Z 480 "$f.png" --out "$f.jpg" > /dev/null
             echo "BEGIN_SHOT_$f"; base64 -i "$f.jpg" | fold -w 900; echo "END_SHOT_$f"

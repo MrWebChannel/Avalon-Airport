@@ -17,6 +17,7 @@ struct AvalonApp: App {
 /// Shows the splash (with the build number) over the app on every launch.
 struct AppShell: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showSplash = true
     /// Launch argument used by the GitHub screenshot check to keep the splash on screen.
     private let holdSplash = ProcessInfo.processInfo.arguments.contains("-holdSplash")
@@ -31,10 +32,11 @@ struct AppShell: View {
                     .transition(.opacity)
                     .zIndex(1)
                     .onTapGesture { hideSplash() }
-                    .task {
-                        if holdSplash { return }
-                        // If this view is torn down early the sleep throws; only hide after a full wait.
-                        do { try await Task.sleep(for: .seconds(2.5)) } catch { return }
+                    // Counts only while the app is actually on screen and active. If the app goes
+                    // inactive (launching under Xcode, a system prompt), the countdown starts over.
+                    .task(id: scenePhase) {
+                        guard scenePhase == .active, !holdSplash else { return }
+                        do { try await Task.sleep(for: .seconds(3)) } catch { return }
                         hideSplash()
                     }
             }
