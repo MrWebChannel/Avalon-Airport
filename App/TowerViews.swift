@@ -148,11 +148,22 @@ struct DeliverablesView: View {
     }
 }
 
-// MARK: - Packages: approve and append a journey template
+// MARK: - Airport Hub: hubs, packages and provider mode
 
-struct PackagesView: View {
+struct HubView: View {
     var body: some View {
         List {
+            Section {
+                NavigationLink {
+                    ProviderView()
+                } label: {
+                    Label("Flights I operate for other Captains", systemImage: "briefcase")
+                }
+            } header: {
+                Text("Provider mode")
+            } footer: {
+                Text("Import a .avj a Captain sent you, propose updates, send the reply back.")
+            }
             ForEach(SampleCatalog.hubs) { hub in
                 let packages = SampleCatalog.packages.filter { $0.hubId == hub.id }
                 Section {
@@ -176,7 +187,7 @@ struct PackagesView: View {
                 }
             }
         }
-        .navigationTitle("Hubs")
+        .navigationTitle("Airport Hub")
     }
 }
 
@@ -234,9 +245,9 @@ struct StartJourneyView: View {
     }
 }
 
-// MARK: - Tower: connectors, rules, plugins, audit trail
+// MARK: - Tower settings: connectors, rules, plugins, audit trail
 
-struct TowerView: View {
+struct TowerSettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var pickingFolder = false
 
@@ -333,9 +344,81 @@ struct TowerView: View {
                 NoJourneyView()
             }
         }
-        .navigationTitle("Flight Tower")
+        .navigationTitle("Tower Settings")
         .fileImporter(isPresented: $pickingFolder, allowedContentTypes: [.folder]) { result in
             if case .success(let url) = result { model.linkStorage(folder: url) }
         }
+    }
+}
+
+
+// MARK: - Flight Tower: Dashboard, Inbox, Documents, Atlas, Settings
+
+enum TowerSection: String, CaseIterable, Identifiable {
+    case dashboard = "Dashboard", inbox = "Inbox", documents = "Docs", atlas = "Atlas", settings = "Settings"
+    var id: String { rawValue }
+}
+
+struct FlightTowerView: View {
+    @Environment(AppModel.self) private var model
+    @State private var section: TowerSection = .dashboard
+
+    var body: some View {
+        Group {
+            switch section {
+            case .dashboard: FlightBoardView()
+            case .inbox: InboxView()
+            case .documents: DeliverablesView()
+            case .atlas: AtlasView()
+            case .settings: TowerSettingsView()
+            }
+        }
+        .safeAreaInset(edge: .top) {
+            Picker("Section", selection: $section) {
+                ForEach(TowerSection.allCases) { s in
+                    Text(s == .inbox && !model.pending.isEmpty ? "Inbox \(model.pending.count)" : s.rawValue).tag(s)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.bottom, 6)
+            .background(.bar)
+        }
+        .navigationDestination(for: String.self) { id in BoardingPassDetailView(boardingPassId: id) }
+    }
+}
+
+// MARK: - Atlas: the Passenger's long-term memory of completed journeys
+
+struct AtlasView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        List {
+            if let journey = model.journey, journey.status != .arrived {
+                Section("In progress") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(journey.title).font(.headline)
+                        Text("Heading to \(journey.destination.title)").font(.caption).foregroundStyle(.secondary)
+                        ProgressView(value: journey.completion)
+                    }
+                }
+            }
+            Section("Completed journeys") {
+                if model.atlas.isEmpty {
+                    Text("Arrivals are recorded here: where you went, when, and what was decided.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                ForEach(model.atlas) { entry in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label(entry.destinationTitle, systemImage: "flag.checkered").font(.headline)
+                        Text(entry.title).font(.subheadline)
+                        Text("\(shortDate.string(from: entry.startedAt)) to \(shortDate.string(from: entry.completedAt)) · \(entry.summary)")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Atlas")
     }
 }

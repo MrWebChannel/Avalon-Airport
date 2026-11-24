@@ -319,6 +319,17 @@ public struct Lounge: Codable, Hashable, Sendable {
     public var messages: [LoungeMessage]
 }
 
+/// The Passenger's long-term memory of significant journeys: one entry per arrival.
+public struct AtlasEntry: Codable, Identifiable, Hashable, Sendable {
+    public var id: String
+    public var journeyId: String
+    public var title: String
+    public var destinationTitle: String
+    public var startedAt: Date
+    public var completedAt: Date
+    public var summary: String
+}
+
 public struct Journey: Codable, Identifiable, Hashable, Sendable {
     public var id: String
     public var title: String

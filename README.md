@@ -16,7 +16,7 @@ Needs Xcode 15.3 or later on the Mac. The first build downloads Yams (the one de
 ```bash
 cd AvalonCore
 swift run avalon-demo      # walks the Protected Estate journey end to end
-swift test                 # 23 tests covering the v0.3 rules
+swift test                 # tests covering the v0.3 rules
 ```
 
 The demo shows, in order: a package approved into a journey, crew credentials, a filtered `.avj` snapshot, a `.avj` reply round trip, pre-flight checks holding a flight, a deliverable notice and the Captain filing it, a read-only folder grant, an AI agent blocked from granting itself access, the Delay plugin auto-delaying an overdue flight, delay accountability (reason and cause), the HCS content plugin running in JavaScriptCore, a grant expiring at landing, customs, arrival, and the hash-chained audit trail.
@@ -34,13 +34,13 @@ The demo shows, in order: a package approved into a journey, crew credentials, a
 
 ### Trying it
 
-- **Packages** tab: open Financial Freedom → Protected Estate → Approve and start journey.
-- **Board**: tap a flight → add a Pilot → "Send .avj" shares that provider's filtered snapshot.
-- **Provider** tab (the same app acts as the airline): import the snapshot, compose an update (status, ETA, reason, waiting on, deliverable sent), "Create reply .avj".
-- **Inbox**: import the reply; approve or reject. Blocked proposals show the plugin's reason.
-- **Documents**: mark received, reviewed, then "File it" (pick the file you saved). The next flight is held until you do.
-- **Tower**: link a storage folder and your calendar, share a folder read-only with a credential, see plugins, Ground Crew results and the event log (chain check).
-- Pull to refresh on the Board runs the plugins (delay rules, flight checks, package plugins).
+- **Hub**: open Financial Freedom → Protected Estate → Approve and start journey.
+- **Tower → Dashboard**: tap a flight → add a Pilot → "Send .avj" shares that provider's filtered snapshot. Pull down to run the plugins.
+- **Hub → Provider mode** (the same app acts as the airline): import the snapshot, compose an update, "Create reply .avj".
+- **Tower → Inbox**: import the reply; approve or reject. Blocked proposals show the plugin's reason.
+- **Tower → Docs**: mark received, reviewed, then "File it". The next flight is held until you do.
+- **Tower → Atlas / Settings**: completed journeys; connectors, grants, plugins, Ground Crew and the event log.
+- **Journey**: the route as a map of stops. **Lounge**: private messages for tower members.
 
 For a two-device test (you and your HCS partner): run the app on both, start the journey on yours, add your partner as crew, send them the `.avj`, they reply from their Provider tab.
 

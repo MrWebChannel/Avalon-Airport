@@ -25,13 +25,12 @@ struct FlightBoardView: View {
                     }
                 }
                 .navigationTitle(journey.title)
-                .navigationDestination(for: String.self) { id in BoardingPassDetailView(boardingPassId: id) }
                 .toolbar {
                     Button { model.runChecks() } label: { Label("Run checks", systemImage: "checkmark.shield") }
                 }
                 .refreshable { model.runChecks() }
             } else {
-                NoJourneyView().navigationTitle("Avalon")
+                NoJourneyView().navigationTitle("Dashboard")
             }
         }
     }
@@ -241,6 +240,163 @@ struct StatusChangeView: View {
                         dismiss()
                     }
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Journey map: are we getting closer, and what's holding us up?
+
+struct JourneyMapView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Group {
+            if let journey = model.journey {
+                let rows = model.board
+                let currentId = rows.first { !$0.status.isTerminal }?.id
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(journey.title).font(.title2.bold())
+                            ProgressView(value: journey.completion)
+                            Text("\(Int(journey.completion * 100))% of the way to \(journey.destination.title)")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        .padding(.bottom, 20)
+
+                        ForEach(rows) { row in
+                            NavigationLink(value: row.id) {
+                                JourneyStopView(row: row, isCurrent: row.id == currentId)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        DestinationStopView(destination: journey.destination)
+                    }
+                    .padding()
+                }
+                .navigationTitle("Journey")
+                .navigationDestination(for: String.self) { id in BoardingPassDetailView(boardingPassId: id) }
+            } else {
+                NoJourneyView().navigationTitle("Journey")
+            }
+        }
+    }
+}
+
+struct JourneyStopView: View {
+    let row: FlightBoardRow
+    let isCurrent: Bool
+
+    private var done: Bool { row.status == .landed || row.status == .closed }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(done ? Color.green : (isCurrent ? Color.blue : Color(.systemGray5)))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: done ? "checkmark" : (row.kind == .customs ? "signature" : "airplane"))
+                        .foregroundStyle(done || isCurrent ? Color.white : Color.secondary)
+                }
+                Rectangle()
+                    .fill(done ? Color.green : Color(.systemGray4))
+                    .frame(width: 3, height: 56)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text(row.code).font(.system(.subheadline, design: .monospaced).bold())
+                    Text(row.title).font(.headline)
+                }
+                Text(row.operatedBy).font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text(row.status.rawValue.uppercased()).font(.caption.bold()).foregroundStyle(row.status.color)
+                    if let eta = row.eta { Text("ETA \(shortDate.string(from: eta))").font(.caption).foregroundStyle(.secondary) }
+                }
+                if let holding = row.holdingParty { Label(holding, systemImage: "hourglass").font(.caption).foregroundStyle(.orange) }
+                if let delayedBy = row.delayedBy { Label("Delayed by \(delayedBy)", systemImage: "arrow.down.right").font(.caption).foregroundStyle(.red) }
+            }
+            .padding(.top, 8)
+            Spacer()
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+struct DestinationStopView: View {
+    let destination: Destination
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(destination.status == .achieved ? Color.green : Color.orange)
+                    .frame(width: 40, height: 40)
+                Image(systemName: "flag.checkered").foregroundStyle(Color.white)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(destination.title).font(.headline)
+                Text(destination.status == .achieved ? "Arrived" : "Destination")
+                    .font(.caption.bold())
+                    .foregroundStyle(destination.status == .achieved ? Color.green : Color.orange)
+                ForEach(destination.successCriteria, id: \.self) { c in
+                    Label(c, systemImage: "checkmark.circle").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.top, 8)
+        }
+    }
+}
+
+// MARK: - Lounge: private conversation for tower members
+
+struct LoungeView: View {
+    @Environment(AppModel.self) private var model
+    @State private var draft = ""
+
+    var body: some View {
+        Group {
+            if let journey = model.journey {
+                List {
+                    Section {
+                        Text("Private to the Captain, Co-Captains and Passengers. Airlines and their agents never see the Lounge.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                    Section("Conversation") {
+                        if model.loungeMessages.isEmpty { Text("No messages yet").foregroundStyle(.secondary) }
+                        ForEach(Array(model.loungeMessages.enumerated()), id: \.offset) { _, message in
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text(journey.member(message.authorId)?.displayName ?? message.authorId)
+                                        .font(.subheadline.bold())
+                                    Spacer()
+                                    Text(message.at, format: .dateTime.month().day().hour().minute())
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                                Text(message.text)
+                            }
+                        }
+                    }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    HStack {
+                        TextField("Message", text: $draft, axis: .vertical)
+                            .textFieldStyle(.roundedBorder)
+                        Button {
+                            model.postToLounge(draft)
+                            draft = ""
+                        } label: {
+                            Image(systemName: "paperplane.fill")
+                        }
+                        .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    .padding()
+                    .background(.bar)
+                }
+                .navigationTitle("Lounge")
+            } else {
+                NoJourneyView().navigationTitle("Lounge")
             }
         }
     }

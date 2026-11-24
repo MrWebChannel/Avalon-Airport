@@ -33,19 +33,15 @@ struct RootView: View {
 
     var body: some View {
         TabView {
-            NavigationStack { FlightBoardView() }
-                .tabItem { Label("Board", systemImage: "airplane.departure") }
-            NavigationStack { InboxView() }
-                .tabItem { Label("Inbox", systemImage: "tray.full") }
-                .badge(model.pending.count)
-            NavigationStack { DeliverablesView() }
-                .tabItem { Label("Documents", systemImage: "doc.text") }
-            NavigationStack { PackagesView() }
-                .tabItem { Label("Packages", systemImage: "shippingbox") }
-            NavigationStack { TowerView() }
+            NavigationStack { HubView() }
+                .tabItem { Label("Hub", systemImage: "building.2") }
+            NavigationStack { FlightTowerView() }
                 .tabItem { Label("Tower", systemImage: "antenna.radiowaves.left.and.right") }
-            NavigationStack { ProviderView() }
-                .tabItem { Label("Provider", systemImage: "briefcase") }
+                .badge(model.pending.count)
+            NavigationStack { JourneyMapView() }
+                .tabItem { Label("Journey", systemImage: "map") }
+            NavigationStack { LoungeView() }
+                .tabItem { Label("Lounge", systemImage: "cup.and.saucer") }
         }
         .alert("Avalon", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK") { model.errorMessage = nil }
@@ -101,7 +97,7 @@ extension FindingSeverity {
 struct NoJourneyView: View {
     var body: some View {
         ContentUnavailableView("No journey yet", systemImage: "airplane",
-                               description: Text("Open Packages, choose a journey template, and approve it to start."))
+                               description: Text("Open the Hub, choose a journey template, and approve it to start."))
     }
 }
 

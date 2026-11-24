@@ -26,6 +26,8 @@ public struct TowerState: Codable {
     public var autoApproveRules: [AutoApproveRule] = [.delayRule]
     public var packagePlugins: [PluginDescriptor] = []
     public var log = EventLog()
+    /// Optional so towers saved before Build 2 still load.
+    public var atlas: [AtlasEntry]? = nil
 }
 
 /// Governs one Journey. Only the FlightTower persists changes to Journey state.
@@ -58,6 +60,8 @@ public final class FlightTower {
     /// Captains and Co-Captains.
     public var commitMemberIds: [String] { journey.members.filter { $0.role.canCommit }.map(\.id) }
     public var captain: TowerMember? { journey.members.first { $0.role == .captain } }
+    public var atlasEntries: [AtlasEntry] { state.atlas ?? [] }
+    public var loungeMessages: [LoungeMessage] { journey.lounge?.messages ?? [] }
 
     // MARK: Creating a journey from a package
 
@@ -456,6 +460,17 @@ public final class FlightTower {
         if status == .filed { checkArrival(now: now) }
     }
 
+    // MARK: Lounge (tower members only; airlines never see it)
+
+    public func postToLounge(_ text: String, by memberId: String) throws {
+        guard let lounge = journey.lounge, lounge.memberIds.contains(memberId) else {
+            throw TowerError.notAuthorized("Only Lounge members can post here")
+        }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw TowerError.invalid("Message is empty") }
+        state.journey.lounge?.messages.append(LoungeMessage(authorId: memberId, text: trimmed, at: clock()))
+    }
+
     // MARK: Scheduled checks
 
     /// Runs plugins for every open boarding pass (delay rules, flight checks, package plugins).
@@ -483,6 +498,10 @@ public final class FlightTower {
         state.journey.destination.status = .achieved
         state.journey.destination.achievedAt = now
         log(.destinationAchieved, actor: .tower, reportedAt: now, payload: ["destination": journey.destination.title])
+        let entry = AtlasEntry(id: Ids.make("AE"), journeyId: journey.id, title: journey.title,
+                               destinationTitle: journey.destination.title, startedAt: journey.createdAt, completedAt: now,
+                               summary: "\(counted.count) flights, \(journey.deliverables.count) documents filed")
+        state.atlas = (state.atlas ?? []) + [entry]
     }
 
     // MARK: Helpers

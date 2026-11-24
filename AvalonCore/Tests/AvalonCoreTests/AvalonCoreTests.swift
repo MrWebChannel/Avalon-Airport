@@ -312,6 +312,28 @@ final class AvalonCoreTests: XCTestCase {
     }
 }
 
+extension AvalonCoreTests {
+    func testLoungeIsForMembersOnly() throws {
+        try tower.postToLounge("Should we ask about the beneficiaries?", by: coCaptain.id)
+        try tower.postToLounge("I'm following along", by: passenger.id)
+        XCTAssertEqual(tower.loungeMessages.count, 2)
+        XCTAssertThrowsError(try tower.postToLounge("Hello from the firm", by: attorney.id))
+        let snapshot = try tower.snapshotManifest(for: attorneyCred.id)
+        XCTAssertFalse(try snapshot.yaml().contains("beneficiaries"), "The Lounge never leaves the tower")
+    }
+
+    func testArrivalAddsAnAtlasEntry() throws {
+        XCTAssertTrue(tower.atlasEntries.isEmpty)
+        try completeReview()
+        for bp in tower.journey.boardingPasses.dropFirst() {
+            _ = tower.submit(Proposal(boardingPassId: bp.id, authorId: captain.id, authorType: .member,
+                                      reportedAt: clock.now, message: "close", statusChange: StatusChange(status: .landed)))
+        }
+        XCTAssertEqual(tower.atlasEntries.count, 1)
+        XCTAssertEqual(tower.atlasEntries.first?.destinationTitle, "Trust updated and portfolio aligned")
+    }
+}
+
 struct TamperedLog: Encodable { var events: [Event] }
 
 final class StubRuntime: ScriptRuntime {

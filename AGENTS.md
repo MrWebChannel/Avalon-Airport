@@ -15,6 +15,10 @@ These rules apply to Claude, ChatGPT, Gemini or any other agent. `CLAUDE.md` and
 
 If the checks fail, fix them on the same branch; do not open a new pull request.
 
+**App files:** the owner's Xcode project lists the files in `App/` one by one. Prefer adding code to existing files. If a new file in `App/` is unavoidable, say so at the top of the pull request so the owner can add it in Xcode (right-click the Avalon folder, Add Files).
+
+**Navigation (bottom tabs):** Hub, Tower, Journey, Lounge. The Tower holds Dashboard, Inbox, Documents, Atlas and Settings.
+
 ## Design rules (from the domain model)
 
 - The client owns the airport. Only the FlightTower persists Journey state; everyone else proposes.
