@@ -4,11 +4,13 @@ import AvalonCore
 @main
 struct AvalonApp: App {
     @State private var model = AppModel()
+    @State private var jet = JetStream()
 
     var body: some Scene {
         WindowGroup {
             AppShell()
                 .environment(model)
+                .environment(jet)
                 .preferredColorScheme(.dark)
         }
     }
@@ -17,6 +19,7 @@ struct AvalonApp: App {
 /// Shows the splash (with the build number) over the app on every launch.
 struct AppShell: View {
     @Environment(AppModel.self) private var model
+    @Environment(JetStream.self) private var jet
     @Environment(\.scenePhase) private var scenePhase
     @State private var showSplash = true
     /// Launch argument used by the GitHub screenshot check to keep the splash on screen.
@@ -27,6 +30,15 @@ struct AppShell: View {
             RootView()
                 .onOpenURL { url in model.importManifest(from: url) }
                 .task { model.appOpened() }
+                // The default update check: pulls Jet-Stream packages once a minute while the app is active.
+                // The Lounge tab checks every few seconds on its own while it is open.
+                .task(id: scenePhase) {
+                    guard scenePhase == .active else { return }
+                    while !Task.isCancelled {
+                        await jet.check()
+                        do { try await Task.sleep(for: .seconds(JetStreamConfig.backgroundCheckSeconds)) } catch { return }
+                    }
+                }
             if showSplash {
                 SplashView()
                     .transition(.opacity)
@@ -50,6 +62,7 @@ struct AppShell: View {
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @Environment(JetStream.self) private var jet
 
     var body: some View {
         TabView {
@@ -62,6 +75,7 @@ struct RootView: View {
                 .tabItem { Label("Journey", systemImage: "map") }
             NavigationStack { LoungeView() }
                 .tabItem { Label("Lounge", systemImage: "cup.and.saucer") }
+                .badge(jet.unread)
         }
         .alert("Avalon", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK") { model.errorMessage = nil }

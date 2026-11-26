@@ -332,6 +332,25 @@ extension AvalonCoreTests {
         XCTAssertEqual(tower.atlasEntries.count, 1)
         XCTAssertEqual(tower.atlasEntries.first?.destinationTitle, "Trust updated and portfolio aligned")
     }
+
+    // MARK: Jet-Stream packages
+
+    func testJetStreamLoungePackageRoundTripsAsYAML() throws {
+        let pkg = try JetStreamPackage.lounge(text: "  Chapter 3 notes are in: see line 12  ", from: "Kole",
+                                              thread: "J-BOOK", threadTitle: "Book edit", at: clock.now)
+        let yaml = try pkg.yaml()
+        XCTAssertTrue(yaml.contains("kind: lounge"))
+        let back = try JetStreamPackage.fromYAML(yaml)
+        XCTAssertEqual(back, pkg)
+        XCTAssertEqual(back.text, "Chapter 3 notes are in: see line 12")
+    }
+
+    func testJetStreamRefusesEmptyAndOversizedMessages() {
+        XCTAssertThrowsError(try JetStreamPackage.lounge(text: "   ", from: "Kole", thread: "J", threadTitle: nil, at: clock.now))
+        let huge = String(repeating: "a", count: JetStreamPackage.maxBytes + 1)
+        let pkg = JetStreamPackage(kind: .lounge, thread: "J", fromName: "Kole", text: huge, sentAt: clock.now)
+        XCTAssertThrowsError(try pkg.yaml())
+    }
 }
 
 struct TamperedLog: Encodable { var events: [Event] }

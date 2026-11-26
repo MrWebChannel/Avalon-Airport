@@ -47,6 +47,8 @@ Crew `kind`: human or agent.
 
 **Log:** Event (immutable, hash-chained), StatusChange, ActionRecord, Finding, Manifest (`.avj`, renamed from JourneyPackage).
 
+**Transport:** JetStreamPackage (one small YAML package carried by Jet-Stream; kind `lounge` in build 5).
+
 ## Plugins
 
 - One **PluginEngine** inside the FlightTower. It verifies package plugin signatures, loads the plugins of the boarding pass being evaluated (plugins ride on one Flight), runs them on triggers (onProposal, onEvent, onAppOpen, onSchedule) and collects Findings.
@@ -90,6 +92,20 @@ notify, addCalendarEvent, updateEta, remindCustoms, verifyDeliverable, shareFold
 ## Manifest (`.avj`)
 
 YAML file traded by Messages, email or AirDrop. `snapshot` goes from the tower to a credential holder, filtered by that credential. `proposal` comes back carrying the credential id and key code; the tower takes identity from the credential, not from the file.
+
+## Jet-Stream (transport)
+
+Jet-Stream is a Supabase project that carries YAML packages between Avalon apps. It is a plain transport, not a routing or permission layer.
+
+- Every account is just a user. There are no crew or client roles on the server.
+- The sending app decides who receives a package (from the boarding pass, or the people added to the Lounge) and sends one copy per recipient in a single request.
+- The server guarantees only the envelope: the sender cannot be faked, only the addressee (and sender) can read a package, the YAML cannot change after sending, and the server records a SHA-256 of each package.
+- The `messages` table is the queue: a package stays `sent` until the recipient's app marks it `applied`. The sender sees `applied` as delivered.
+- Every app runs an update check once a minute while open; the Lounge checks every few seconds while it is on screen. Realtime and push are not used.
+- Packages of a kind an app does not know are left `sent` for a newer build.
+- Accounts are email and password; the session is kept in the device Keychain. People are added to the Lounge by exact email (no browsable directory).
+- Lounge messages are stored on each device; airlines never receive them. They are not end-to-end encrypted yet; add that before health, legal or financial journeys use the Lounge.
+- Enterprise may later move roles, fan-out (one package to many) and persistence to the server.
 
 ## MVP limits
 

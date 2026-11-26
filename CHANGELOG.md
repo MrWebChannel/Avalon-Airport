@@ -2,6 +2,17 @@
 
 One entry per build, newest first. The build number matches `AvalonVersion.build` and the splash screen.
 
+## Build 5 · 2026-11-25 · Claude
+
+- **Jet-Stream (Supabase) is live.** Avalon apps now exchange YAML packages through the Avalon-Airport Supabase project. Plain HTTPS, no new dependency; the sign-in session is kept in the Keychain.
+- **Lounge is a real chat.** Create a Jet-Stream account (or sign in) in the Lounge tab, add people by email with the People button, and messages go to each of them. Bubbles show sent, then delivered once the other app has picked the message up. People who message you are added automatically so you can reply.
+- **Update checks:** every 4 seconds while the Lounge is open, once a minute elsewhere while the app is active. New Lounge messages show as a badge on the Lounge tab.
+- **App icon:** control tower with a plane on a dotted flight path (navy, matches the splash). Needed one new build setting, `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`.
+- Engine (core 0.4.0): `JetStreamPackage`, the YAML format Jet-Stream carries. 2 new tests.
+- The old on-device Lounge list is no longer shown; messages are now kept per device by Jet-Stream.
+- **Before testing:** in the Supabase dashboard, Authentication → Sign In / Providers → Email, turn off **Confirm email** for the pilot. Otherwise each new account must click a confirmation email first.
+- **Test:** splash shows **Build 5** and the home screen shows the tower icon. Run two simulators (or a simulator and your phone), create an account in each Lounge, add each other by email, and chat. Each message should arrive within about 4 seconds and change from sent to delivered.
+
 ## Build 4 · 2026-11-23 · Claude
 
 - Dark mode throughout, including system screens.
