@@ -2,6 +2,37 @@
 
 One entry per build, newest first. The build number matches `AvalonVersion.build` and the splash screen.
 
+## Build 7 · 2026-11-25 · Claude
+
+- **Business cards.** Hubs, airports and airlines can carry a business card in their YAML: name, job title, firm, phone, email, website and a photo link (https only). Rule agreed with the owner: business cards may travel; Passenger and member contact details never do. `AGENTS.md` and the spec say so.
+- **Address book.** Each card shows call, email and website links and an **Add to Contacts** button that opens Apple's own New Contact screen, pre-filled (with the photo, if the card has one). You check it and tap Done; Avalon never adds or edits contacts on its own.
+- **Already in Contacts?** Tap **Check my Contacts** once to allow Avalon to look. Cards that match by email or phone show a green badge, use your own photo of that person, and offer **View in Contacts**. Nothing from Contacts is sent anywhere.
+- Cards appear when starting a journey ("Who you'll work with"), on each flight's detail ("Business card"), and on a hub if it has one. The sample firms have example cards (555 numbers, example.com addresses).
+- Engine (core 0.5.0, schema 0.4): `BusinessContact` on Hub, Airport and Airline, with `sanitized()`. Older files without cards still load. 3 new tests.
+- New project setting: `INFOPLIST_KEY_NSContactsUsageDescription` (the text iOS shows when asking for Contacts access).
+- **Test:** Hub → Protected Estate: two business cards. Tap Add to Contacts on one and save it. Tap Check my Contacts and allow: the saved card shows the green badge and View in Contacts.
+
+## Build 6 · 2026-11-25 · Claude
+
+- **Onboarding screen.** After the splash on first launch, Avalon asks you to set up: your name, a unique @username (checked as you type), email, password (entered twice) and an optional photo. "I have an account" signs in instead. "Not now" lets you look around; the Lounge offers setup again later.
+- **Photo stays on the phone.** It is shrunk to a small image and kept on this device only. Avalon still never sends images through Jet-Stream.
+- **Lounge:** add people by email or @username. The People sheet shows your photo, name and @username. Fixed two alerts trying to open at once.
+- **Journey start** fills in the Captain name from your profile.
+- Jet-Stream (server): profiles now hold a unique username; a username availability check signed-out apps can call (yes/no only); lookup by email or username.
+- No engine change (core 0.4.0). No project setting changes.
+- **Test:** delete the app from the simulator (so it acts like a first install), run, and after the splash the setup screen should appear. Create an account with a photo, then open Lounge → People: your photo and @username show. On a second simulator, add the first account by @username and chat.
+
+## Build 5 · 2026-11-25 · Claude
+
+- **Jet-Stream (Supabase) is live.** Avalon apps now exchange YAML packages through the Avalon-Airport Supabase project. Plain HTTPS, no new dependency; the sign-in session is kept in the Keychain.
+- **Lounge is a real chat.** Create a Jet-Stream account (or sign in) in the Lounge tab, add people by email with the People button, and messages go to each of them. Bubbles show sent, then delivered once the other app has picked the message up. People who message you are added automatically so you can reply.
+- **Update checks:** every 4 seconds while the Lounge is open, once a minute elsewhere while the app is active. New Lounge messages show as a badge on the Lounge tab.
+- **App icon:** control tower with a plane on a dotted flight path (navy, matches the splash). Needed one new build setting, `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`.
+- Engine (core 0.4.0): `JetStreamPackage`, the YAML format Jet-Stream carries. 2 new tests.
+- The old on-device Lounge list is no longer shown; messages are now kept per device by Jet-Stream.
+- **Before testing:** in the Supabase dashboard, Authentication → Sign In / Providers → Email, turn off **Confirm email** for the pilot. Otherwise each new account must click a confirmation email first.
+- **Test:** splash shows **Build 5** and the home screen shows the tower icon. Run two simulators (or a simulator and your phone), create an account in each Lounge, add each other by email, and chat. Each message should arrive within about 4 seconds and change from sent to delivered.
+
 ## Build 4 · 2026-11-23 · Claude
 
 - Dark mode throughout, including system screens.

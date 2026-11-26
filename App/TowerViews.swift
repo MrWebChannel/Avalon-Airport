@@ -180,6 +180,7 @@ struct HubView: View {
                             }
                         }
                     }
+                    if let card = hub.contact, !card.isEmpty { BusinessCardView(card: card, caption: "Hub") }
                 } header: {
                     Text(hub.name)
                 } footer: {
@@ -193,6 +194,7 @@ struct HubView: View {
 
 struct StartJourneyView: View {
     @Environment(AppModel.self) private var model
+    @Environment(JetStream.self) private var jet
     @Environment(\.dismiss) private var dismiss
     let package: HubPackage
     let template: JourneyTemplate
@@ -218,6 +220,14 @@ struct StartJourneyView: View {
                 }
                 LabeledContent("Destination", value: template.destinationTitle)
             }
+            let cards = package.airlines.compactMap { a in a.contact.map { (a, $0) } }.filter { !$0.1.isEmpty }
+            if !cards.isEmpty {
+                Section("Who you'll work with") {
+                    ForEach(cards, id: \.0.id) { pair in
+                        BusinessCardView(card: pair.1, caption: pair.0.type.capitalized)
+                    }
+                }
+            }
             if !package.plugins.isEmpty {
                 Section("Package plugins") {
                     ForEach(package.plugins) { p in LabeledContent(p.name, value: p.type.rawValue) }
@@ -233,6 +243,8 @@ struct StartJourneyView: View {
             }
         }
         .navigationTitle(template.title)
+        // The onboarding name is the Captain by default.
+        .onAppear { if captainName.isEmpty, jet.isSignedIn { captainName = jet.myName } }
         .confirmationDialog("This replaces the journey on this device (MVP holds one journey).",
                             isPresented: $confirmReplace, titleVisibility: .visible) {
             Button("Replace journey", role: .destructive) { start() }

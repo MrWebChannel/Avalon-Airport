@@ -129,7 +129,11 @@ public struct Airline: Codable, Identifiable, Hashable, Sendable {
     public var id: String
     public var name: String
     public var type: String
-    public init(id: String, name: String, type: String) { self.id = id; self.name = name; self.type = type }
+    /// The firm's public business card (optional).
+    public var contact: BusinessContact?
+    public init(id: String, name: String, type: String, contact: BusinessContact? = nil) {
+        self.id = id; self.name = name; self.type = type; self.contact = contact
+    }
 }
 
 /// A curated ecosystem of trusted Airlines within a Hub.
@@ -137,7 +141,10 @@ public struct Airport: Codable, Identifiable, Hashable, Sendable {
     public var id: String
     public var name: String
     public var airlineIds: [String]
-    public init(id: String, name: String, airlineIds: [String]) { self.id = id; self.name = name; self.airlineIds = airlineIds }
+    public var contact: BusinessContact?
+    public init(id: String, name: String, airlineIds: [String], contact: BusinessContact? = nil) {
+        self.id = id; self.name = name; self.airlineIds = airlineIds; self.contact = contact
+    }
 }
 
 /// A knowledge and service domain.
@@ -145,7 +152,52 @@ public struct Hub: Codable, Identifiable, Hashable, Sendable {
     public var id: String
     public var name: String
     public var summary: String
-    public init(id: String, name: String, summary: String) { self.id = id; self.name = name; self.summary = summary }
+    public var contact: BusinessContact?
+    public init(id: String, name: String, summary: String, contact: BusinessContact? = nil) {
+        self.id = id; self.name = name; self.summary = summary; self.contact = contact
+    }
+}
+
+/// A business card published by a Hub, Airport or Airline: what a firm prints on its own card.
+/// Allowed in YAML because the firm chooses to be reachable. Personal contact details of Passengers and
+/// tower members are never put in YAML. The photo travels as an https link the app downloads, never as an image.
+public struct BusinessContact: Codable, Hashable, Sendable {
+    /// A named person at the firm, e.g. "Joe Ramirez". Optional.
+    public var name: String?
+    public var jobTitle: String?
+    public var organization: String?
+    public var phone: String?
+    public var email: String?
+    public var website: String?
+    /// https only. Anything else is dropped by `sanitized()`.
+    public var photoURL: String?
+
+    public init(name: String? = nil, jobTitle: String? = nil, organization: String? = nil, phone: String? = nil,
+                email: String? = nil, website: String? = nil, photoURL: String? = nil) {
+        self.name = name; self.jobTitle = jobTitle; self.organization = organization; self.phone = phone
+        self.email = email; self.website = website; self.photoURL = photoURL
+    }
+
+    /// Trimmed, empty fields removed, and the photo kept only if it is an https link.
+    public func sanitized() -> BusinessContact {
+        func clean(_ value: String?) -> String? {
+            guard let t = value?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return nil }
+            return t
+        }
+        var c = BusinessContact(name: clean(name), jobTitle: clean(jobTitle), organization: clean(organization),
+                                phone: clean(phone), email: clean(email), website: clean(website), photoURL: clean(photoURL))
+        if let url = c.photoURL, !url.lowercased().hasPrefix("https://") { c.photoURL = nil }
+        if let site = c.website, !site.lowercased().hasPrefix("http") { c.website = "https://" + site }
+        return c
+    }
+
+    /// True when there is nothing to show or save.
+    public var isEmpty: Bool {
+        [name, organization, phone, email, website].allSatisfy { ($0 ?? "").trimmingCharacters(in: .whitespaces).isEmpty }
+    }
+
+    /// The best label for the card: the person, else the firm.
+    public var displayName: String { name ?? organization ?? email ?? phone ?? "Contact" }
 }
 
 // MARK: - Templates and packages (the product)

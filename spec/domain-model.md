@@ -1,4 +1,4 @@
-# Avalon Airport — Domain Model v0.3
+# Avalon Airport — Domain Model v0.4
 
 Baseline: v0.2 (2026-11-18), revised with Claude on 2026-11-22 to match the "Domain Model v0.3" area of the Miro board.
 This file is the single source of truth. Code, prompts and other AI tools read from it. Code lives in `AvalonCore/`.
@@ -39,6 +39,8 @@ Crew `kind`: human or agent.
 
 ## Objects (see `AvalonCore/Sources/AvalonCore/Models.swift` for every field)
 
+**Business cards (v0.4):** Hub, Airport and Airline may carry a `contact` BusinessContact (name, jobTitle, organization, phone, email, website, photoURL). This is the firm's public card and may travel in YAML. Personal contact details of Passengers and tower members never do. Photos travel only as https links the app downloads.
+
 **Product (sellable):** HubPackage (content refs, JourneyTemplates, Flights, plugins, Airports, Airlines, customizedFor), JourneyTemplate (ordered steps: an Airline's Flight or a Customs step), Flight (template), Plugin (PluginDescriptor).
 
 **Journey:** Journey, Destination, BoardingPass (kind flight or customs; status, ETAs, waitingOn, dependsOn, crew, waypoints, deliverables, pluginIds), Waypoint, Deliverable (sent → received → reviewed → filed), Repository (a folder in the Captain's storage, via a Connector), Lounge (members only), AtlasEntry (reserved).
@@ -46,6 +48,8 @@ Crew `kind`: human or agent.
 **Governance (device only):** FlightTower (controllers, autoApproveRules, hosts PluginEngine and GroundCrew), Credential (journey access: permissions read/propose/invite/observe, scope, keyCode, expiry), StorageGrant (read-only folder access tied to a Credential, expires at landing), Connector (storage or calendar; MVP uses the iOS Files app and the device calendar), Proposal (replaces Update), ActionRequest.
 
 **Log:** Event (immutable, hash-chained), StatusChange, ActionRecord, Finding, Manifest (`.avj`, renamed from JourneyPackage).
+
+**Transport:** JetStreamPackage (one small YAML package carried by Jet-Stream; kind `lounge` in build 5).
 
 ## Plugins
 
@@ -81,7 +85,9 @@ A deliverable that changes firms or needs the Captain's approval is a new Boardi
 
 - StorageGrants are read-only, folder-scoped, created only by GroundCrew after approval, expire when their boarding pass lands, and every grant and revocation is an Event.
 - Agents the Captain points at her own storage (Dash or others) are her choice, outside Avalon.
-- Snapshots sent to providers never include the Lounge, member contacts, credentials or grants. Other airlines' flights show code, status and ETA only, never titles.
+- Snapshots sent to providers never include the Lounge, member contacts, credentials or grants.
+- Business cards of hubs, airports and airlines may appear in YAML and snapshots. Passenger and member contact details never do.
+- Address book: Avalon reads Contacts only to find a match for a business card (with the person's permission), and adds a card only through Apple's own New Contact screen where the person taps Save. Nothing from Contacts is sent anywhere. Other airlines' flights show code, status and ETA only, never titles.
 
 ## Actions (GroundCrew catalog)
 
@@ -90,6 +96,21 @@ notify, addCalendarEvent, updateEta, remindCustoms, verifyDeliverable, shareFold
 ## Manifest (`.avj`)
 
 YAML file traded by Messages, email or AirDrop. `snapshot` goes from the tower to a credential holder, filtered by that credential. `proposal` comes back carrying the credential id and key code; the tower takes identity from the credential, not from the file.
+
+## Jet-Stream (transport)
+
+Jet-Stream is a Supabase project that carries YAML packages between Avalon apps. It is a plain transport, not a routing or permission layer.
+
+- Every account is just a user. There are no crew or client roles on the server.
+- The sending app decides who receives a package (from the boarding pass, or the people added to the Lounge) and sends one copy per recipient in a single request.
+- The server guarantees only the envelope: the sender cannot be faked, only the addressee (and sender) can read a package, the YAML cannot change after sending, and the server records a SHA-256 of each package.
+- The `messages` table is the queue: a package stays `sent` until the recipient's app marks it `applied`. The sender sees `applied` as delivered.
+- Every app runs an update check once a minute while open; the Lounge checks every few seconds while it is on screen. Realtime and push are not used.
+- Packages of a kind an app does not know are left `sent` for a newer build.
+- Accounts are set up on first launch: name, unique @username, email, password and an optional photo. The session is kept in the device Keychain. The photo stays on the device and is never sent through Jet-Stream.
+- People are added to the Lounge by exact email or @username (no browsable directory).
+- Lounge messages are stored on each device; airlines never receive them. They are not end-to-end encrypted yet; add that before health, legal or financial journeys use the Lounge.
+- Enterprise may later move roles, fan-out (one package to many) and persistence to the server.
 
 ## MVP limits
 
