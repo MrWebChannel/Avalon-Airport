@@ -25,7 +25,7 @@ If the checks fail, fix them on the same branch; do not open a new pull request.
 - Humans retain authority. Agents provide recommendations. A human reviews every document.
 - Plugins return Findings only. Run order: security, analytics, contentBehavior. Package plugins never get native bridges.
 - No Airline, Pilot or agent gets write access to the Captain's storage.
-- Avalon carries status, not substance. Never put documents or personal contact details in a `.avj` file.
+- Avalon carries status, not substance. Never put documents or personal contact details in a `.avj` file. A Hub, Airport or Airline business card (`BusinessContact`) is allowed; Passenger and member contact details are not. Photos travel only as https links.
 - Keep third-party dependencies to a minimum. The only one today is Yams (YAML).
 
 ## Layout

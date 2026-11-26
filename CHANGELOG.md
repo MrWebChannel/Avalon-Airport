@@ -2,6 +2,16 @@
 
 One entry per build, newest first. The build number matches `AvalonVersion.build` and the splash screen.
 
+## Build 7 · 2026-11-25 · Claude
+
+- **Business cards.** Hubs, airports and airlines can carry a business card in their YAML: name, job title, firm, phone, email, website and a photo link (https only). Rule agreed with the owner: business cards may travel; Passenger and member contact details never do. `AGENTS.md` and the spec say so.
+- **Address book.** Each card shows call, email and website links and an **Add to Contacts** button that opens Apple's own New Contact screen, pre-filled (with the photo, if the card has one). You check it and tap Done; Avalon never adds or edits contacts on its own.
+- **Already in Contacts?** Tap **Check my Contacts** once to allow Avalon to look. Cards that match by email or phone show a green badge, use your own photo of that person, and offer **View in Contacts**. Nothing from Contacts is sent anywhere.
+- Cards appear when starting a journey ("Who you'll work with"), on each flight's detail ("Business card"), and on a hub if it has one. The sample firms have example cards (555 numbers, example.com addresses).
+- Engine (core 0.5.0, schema 0.4): `BusinessContact` on Hub, Airport and Airline, with `sanitized()`. Older files without cards still load. 3 new tests.
+- New project setting: `INFOPLIST_KEY_NSContactsUsageDescription` (the text iOS shows when asking for Contacts access).
+- **Test:** Hub → Protected Estate: two business cards. Tap Add to Contacts on one and save it. Tap Check my Contacts and allow: the saved card shows the green badge and View in Contacts.
+
 ## Build 6 · 2026-11-25 · Claude
 
 - **Onboarding screen.** After the splash on first launch, Avalon asks you to set up: your name, a unique @username (checked as you type), email, password (entered twice) and an optional photo. "I have an account" signs in instead. "Not now" lets you look around; the Lounge offers setup again later.

@@ -5,12 +5,14 @@ import AvalonCore
 struct AvalonApp: App {
     @State private var model = AppModel()
     @State private var jet = JetStream()
+    @State private var addressBook = AddressBook()
 
     var body: some Scene {
         WindowGroup {
             AppShell()
                 .environment(model)
                 .environment(jet)
+                .environment(addressBook)
                 .preferredColorScheme(.dark)
         }
     }

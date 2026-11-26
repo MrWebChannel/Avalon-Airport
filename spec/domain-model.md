@@ -1,4 +1,4 @@
-# Avalon Airport — Domain Model v0.3
+# Avalon Airport — Domain Model v0.4
 
 Baseline: v0.2 (2026-11-18), revised with Claude on 2026-11-22 to match the "Domain Model v0.3" area of the Miro board.
 This file is the single source of truth. Code, prompts and other AI tools read from it. Code lives in `AvalonCore/`.
@@ -38,6 +38,8 @@ Plugin → Finding → Proposal → Captain approves (or an auto-approve rule) �
 Crew `kind`: human or agent.
 
 ## Objects (see `AvalonCore/Sources/AvalonCore/Models.swift` for every field)
+
+**Business cards (v0.4):** Hub, Airport and Airline may carry a `contact` BusinessContact (name, jobTitle, organization, phone, email, website, photoURL). This is the firm's public card and may travel in YAML. Personal contact details of Passengers and tower members never do. Photos travel only as https links the app downloads.
 
 **Product (sellable):** HubPackage (content refs, JourneyTemplates, Flights, plugins, Airports, Airlines, customizedFor), JourneyTemplate (ordered steps: an Airline's Flight or a Customs step), Flight (template), Plugin (PluginDescriptor).
 
@@ -83,7 +85,9 @@ A deliverable that changes firms or needs the Captain's approval is a new Boardi
 
 - StorageGrants are read-only, folder-scoped, created only by GroundCrew after approval, expire when their boarding pass lands, and every grant and revocation is an Event.
 - Agents the Captain points at her own storage (Dash or others) are her choice, outside Avalon.
-- Snapshots sent to providers never include the Lounge, member contacts, credentials or grants. Other airlines' flights show code, status and ETA only, never titles.
+- Snapshots sent to providers never include the Lounge, member contacts, credentials or grants.
+- Business cards of hubs, airports and airlines may appear in YAML and snapshots. Passenger and member contact details never do.
+- Address book: Avalon reads Contacts only to find a match for a business card (with the person's permission), and adds a card only through Apple's own New Contact screen where the person taps Save. Nothing from Contacts is sent anywhere. Other airlines' flights show code, status and ETA only, never titles.
 
 ## Actions (GroundCrew catalog)
 

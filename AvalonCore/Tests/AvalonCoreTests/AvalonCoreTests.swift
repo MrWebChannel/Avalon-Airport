@@ -351,6 +351,35 @@ extension AvalonCoreTests {
         let pkg = JetStreamPackage(kind: .lounge, thread: "J", fromName: "Kole", text: huge, sentAt: clock.now)
         XCTAssertThrowsError(try pkg.yaml())
     }
+
+    // MARK: Business cards
+
+    func testBusinessCardSanitizingDropsUnsafePhotoAndBlanks() {
+        let card = BusinessContact(name: "  Joe  ", organization: " ", phone: "+1 555 0199",
+                                   website: "joes.example.com", photoURL: "http://insecure.example.com/joe.png").sanitized()
+        XCTAssertEqual(card.name, "Joe")
+        XCTAssertNil(card.organization)
+        XCTAssertNil(card.photoURL)
+        XCTAssertEqual(card.website, "https://joes.example.com")
+        XCTAssertFalse(card.isEmpty)
+        XCTAssertTrue(BusinessContact(organization: "  ").isEmpty)
+        XCTAssertEqual(BusinessContact(photoURL: "https://example.com/a.png").sanitized().photoURL, "https://example.com/a.png")
+    }
+
+    func testAirlineBusinessCardTravelsInSnapshot() throws {
+        XCTAssertNotNil(tower.journey.airline("AL-LAW")?.contact)
+        let manifest = try tower.snapshotManifest(for: attorneyCred.id)
+        let yaml = try manifest.yaml()
+        XCTAssertTrue(yaml.contains("sam@law.example.com"))
+        let back = try Manifest.fromYAML(yaml)
+        XCTAssertEqual(back.snapshot?.airlines.first { $0.id == "AL-LAW" }?.contact?.phone, "+1 555 0102")
+    }
+
+    func testOlderFilesWithoutBusinessCardsStillLoad() throws {
+        let json = #"{"id":"AL-OLD","name":"Old Firm","type":"law"}"#
+        let airline = try JSONDecoder().decode(Airline.self, from: Data(json.utf8))
+        XCTAssertNil(airline.contact)
+    }
 }
 
 struct TamperedLog: Encodable { var events: [Event] }

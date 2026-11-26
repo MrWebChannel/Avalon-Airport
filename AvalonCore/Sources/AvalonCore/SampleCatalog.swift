@@ -16,7 +16,11 @@ public enum SampleCatalog {
 
     // MARK: HCS Business Accelerators
 
-    public static let hcsStudio = Airline(id: "AL-HCS", name: "HCS Studio", type: "behavioral design")
+    // Sample business cards use reserved example numbers and domains. Replace them with real cards in real packages.
+    public static let hcsStudio = Airline(id: "AL-HCS", name: "HCS Studio", type: "behavioral design",
+                                          contact: BusinessContact(organization: "Human Complex Systems Studio",
+                                                                   phone: "+1 555 0100", email: "studio@example.com",
+                                                                   website: "https://example.com/hcs"))
 
     public static var businessAccelerators: HubPackage {
         let flights = [
@@ -48,8 +52,14 @@ public enum SampleCatalog {
 
     // MARK: Protected Estate (sample PSF package)
 
-    public static let wealthFirm = Airline(id: "AL-WM", name: "Wealth Management Firm", type: "wealth management")
-    public static let lawFirm = Airline(id: "AL-LAW", name: "Estate Law Firm", type: "estate law")
+    public static let wealthFirm = Airline(id: "AL-WM", name: "Wealth Management Firm", type: "wealth management",
+                                           contact: BusinessContact(name: "Dana Advisor", jobTitle: "Wealth advisor",
+                                                                    organization: "Wealth Management Firm", phone: "+1 555 0101",
+                                                                    email: "dana@wealth.example.com", website: "https://wealth.example.com"))
+    public static let lawFirm = Airline(id: "AL-LAW", name: "Estate Law Firm", type: "estate law",
+                                        contact: BusinessContact(name: "Sam Counsel", jobTitle: "Estate attorney",
+                                                                 organization: "Estate Law Firm", phone: "+1 555 0102",
+                                                                 email: "sam@law.example.com", website: "https://law.example.com"))
 
     public static let decisionNudgeScript = """
     function evaluate(ctx) {

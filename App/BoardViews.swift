@@ -92,6 +92,12 @@ struct BoardingPassDetailView: View {
                     Button("Update status or ETA") { showStatus = true }
                 }
 
+                if bp.kind == .flight, let airline = journey.airline(bp.airlineId), let card = airline.contact, !card.isEmpty {
+                    Section("Business card") {
+                        BusinessCardView(card: card, caption: airline.name)
+                    }
+                }
+
                 if bp.kind == .flight {
                     Section("Flight crew") {
                         ForEach(bp.crewIds, id: \.self) { id in
