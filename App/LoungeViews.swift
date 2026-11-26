@@ -14,13 +14,10 @@ struct LoungeView: View {
             if jet.isSignedIn {
                 LoungeChatView()
             } else {
-                JetStreamSignInView()
+                LoungeSetUpPrompt()
             }
         }
         .navigationTitle("Lounge")
-        .alert("Lounge", isPresented: Binding(get: { jet.errorMessage != nil }, set: { if !$0 { jet.errorMessage = nil } })) {
-            Button("OK") { jet.errorMessage = nil }
-        } message: { Text(jet.errorMessage ?? "") }
     }
 }
 
@@ -95,6 +92,11 @@ struct LoungeChatView: View {
             }
         }
         .sheet(isPresented: $showingPeople) { LoungePeopleView() }
+        // Errors show here only while the People sheet is closed; the sheet shows its own.
+        .alert("Lounge", isPresented: Binding(get: { jet.errorMessage != nil && !showingPeople },
+                                              set: { if !$0 { jet.errorMessage = nil } })) {
+            Button("OK") { jet.errorMessage = nil }
+        } message: { Text(jet.errorMessage ?? "") }
         // Fast check while the Lounge is on screen. SwiftUI cancels this task when the tab is left.
         .task {
             jet.unread = 0
@@ -155,8 +157,8 @@ struct LoungePeopleView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Add by email") {
-                    TextField("their@email.com", text: $email)
+                Section("Add by email or @username") {
+                    TextField("their@email.com or @username", text: $email)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
                         .autocorrectionDisabled()
@@ -168,7 +170,7 @@ struct LoungePeopleView: View {
                             adding = false
                         }
                     }
-                    .disabled(adding || !email.contains("@"))
+                    .disabled(adding || email.trimmingCharacters(in: .whitespaces).count < 3)
                 }
                 Section("In your Lounge") {
                     if jet.contacts.isEmpty { Text("Nobody yet").foregroundStyle(.secondary) }
@@ -181,7 +183,13 @@ struct LoungePeopleView: View {
                     }
                 }
                 Section("You") {
-                    LabeledContent("Name", value: jet.myName)
+                    HStack(spacing: 12) {
+                        ProfileAvatar(data: jet.profilePhoto, size: 44)
+                        VStack(alignment: .leading) {
+                            Text(jet.myName).bold()
+                            if let handle = jet.myUsername { Text("@\(handle)").font(.caption).foregroundStyle(.secondary) }
+                        }
+                    }
                     LabeledContent("Email", value: jet.session?.email ?? "")
                     Button("Sign out of Jet-Stream", role: .destructive) { jet.signOut(); dismiss() }
                 }
@@ -199,50 +207,19 @@ struct LoungePeopleView: View {
     }
 }
 
-/// Jet-Stream account: email and password, kept in the device Keychain.
-struct JetStreamSignInView: View {
-    @Environment(JetStream.self) private var jet
-    @State private var creating = false
-    @State private var name = ""
-    @State private var email = ""
-    @State private var password = ""
-    @State private var working = false
+/// Shown in the Lounge until this device has an account. Opens the same setup as first launch.
+struct LoungeSetUpPrompt: View {
+    @State private var showingSetup = false
 
     var body: some View {
-        Form {
-            Section {
-                Text("The Lounge uses Jet-Stream to carry messages between Avalon apps. Sign in once on this device.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                Picker("", selection: $creating) {
-                    Text("Sign in").tag(false)
-                    Text("Create account").tag(true)
-                }
-                .pickerStyle(.segmented)
-            }
-            Section {
-                if creating { TextField("Your name (shown to others)", text: $name) }
-                TextField("Email", text: $email)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.emailAddress)
-                    .autocorrectionDisabled()
-                    .textContentType(.username)
-                SecureField("Password (6+ characters)", text: $password)
-                    .textContentType(creating ? .newPassword : .password)
-            }
-            Section {
-                Button(working ? "Working..." : (creating ? "Create account" : "Sign in")) {
-                    working = true
-                    Task {
-                        if creating { await jet.signUp(email: email, password: password, displayName: name) }
-                        else { await jet.signIn(email: email, password: password) }
-                        working = false
-                    }
-                }
-                .disabled(working || !email.contains("@") || password.count < 6)
-            }
-            if let notice = jet.noticeMessage {
-                Section { Text(notice).font(.footnote) }
-            }
+        ContentUnavailableView {
+            Label("Set up your account", systemImage: "person.crop.circle.badge.plus")
+        } description: {
+            Text("The Lounge carries private messages between Avalon apps. Set up once on this device.")
+        } actions: {
+            Button("Set up") { showingSetup = true }
+                .buttonStyle(.borderedProminent)
         }
+        .sheet(isPresented: $showingSetup) { OnboardingView() }
     }
 }

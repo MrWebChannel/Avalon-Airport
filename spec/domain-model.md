@@ -103,7 +103,8 @@ Jet-Stream is a Supabase project that carries YAML packages between Avalon apps.
 - The `messages` table is the queue: a package stays `sent` until the recipient's app marks it `applied`. The sender sees `applied` as delivered.
 - Every app runs an update check once a minute while open; the Lounge checks every few seconds while it is on screen. Realtime and push are not used.
 - Packages of a kind an app does not know are left `sent` for a newer build.
-- Accounts are email and password; the session is kept in the device Keychain. People are added to the Lounge by exact email (no browsable directory).
+- Accounts are set up on first launch: name, unique @username, email, password and an optional photo. The session is kept in the device Keychain. The photo stays on the device and is never sent through Jet-Stream.
+- People are added to the Lounge by exact email or @username (no browsable directory).
 - Lounge messages are stored on each device; airlines never receive them. They are not end-to-end encrypted yet; add that before health, legal or financial journeys use the Lounge.
 - Enterprise may later move roles, fan-out (one package to many) and persistence to the server.
 

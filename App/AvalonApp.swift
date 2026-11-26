@@ -22,6 +22,8 @@ struct AppShell: View {
     @Environment(JetStream.self) private var jet
     @Environment(\.scenePhase) private var scenePhase
     @State private var showSplash = true
+    /// Set when the person taps "Not now" on first-run setup. The Lounge still offers setup later.
+    @AppStorage("avalon.onboardingSkipped") private var onboardingSkipped = false
     /// Launch argument used by the GitHub screenshot check to keep the splash on screen.
     private let holdSplash = ProcessInfo.processInfo.arguments.contains("-holdSplash")
 
@@ -29,6 +31,11 @@ struct AppShell: View {
         ZStack {
             RootView()
                 .onOpenURL { url in model.importManifest(from: url) }
+                // First-run setup after the splash, until this device has a Jet-Stream account.
+                .fullScreenCover(isPresented: Binding(get: { !showSplash && !jet.isSignedIn && !onboardingSkipped && !holdSplash },
+                                                      set: { _ in })) {
+                    OnboardingView(onSkip: { onboardingSkipped = true })
+                }
                 .task { model.appOpened() }
                 // The default update check: pulls Jet-Stream packages once a minute while the app is active.
                 // The Lounge tab checks every few seconds on its own while it is open.

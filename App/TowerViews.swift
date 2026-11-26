@@ -193,6 +193,7 @@ struct HubView: View {
 
 struct StartJourneyView: View {
     @Environment(AppModel.self) private var model
+    @Environment(JetStream.self) private var jet
     @Environment(\.dismiss) private var dismiss
     let package: HubPackage
     let template: JourneyTemplate
@@ -233,6 +234,8 @@ struct StartJourneyView: View {
             }
         }
         .navigationTitle(template.title)
+        // The onboarding name is the Captain by default.
+        .onAppear { if captainName.isEmpty, jet.isSignedIn { captainName = jet.myName } }
         .confirmationDialog("This replaces the journey on this device (MVP holds one journey).",
                             isPresented: $confirmReplace, titleVisibility: .visible) {
             Button("Replace journey", role: .destructive) { start() }

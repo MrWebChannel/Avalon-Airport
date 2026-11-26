@@ -2,6 +2,16 @@
 
 One entry per build, newest first. The build number matches `AvalonVersion.build` and the splash screen.
 
+## Build 6 · 2026-11-25 · Claude
+
+- **Onboarding screen.** After the splash on first launch, Avalon asks you to set up: your name, a unique @username (checked as you type), email, password (entered twice) and an optional photo. "I have an account" signs in instead. "Not now" lets you look around; the Lounge offers setup again later.
+- **Photo stays on the phone.** It is shrunk to a small image and kept on this device only. Avalon still never sends images through Jet-Stream.
+- **Lounge:** add people by email or @username. The People sheet shows your photo, name and @username. Fixed two alerts trying to open at once.
+- **Journey start** fills in the Captain name from your profile.
+- Jet-Stream (server): profiles now hold a unique username; a username availability check signed-out apps can call (yes/no only); lookup by email or username.
+- No engine change (core 0.4.0). No project setting changes.
+- **Test:** delete the app from the simulator (so it acts like a first install), run, and after the splash the setup screen should appear. Create an account with a photo, then open Lounge → People: your photo and @username show. On a second simulator, add the first account by @username and chat.
+
 ## Build 5 · 2026-11-25 · Claude
 
 - **Jet-Stream (Supabase) is live.** Avalon apps now exchange YAML packages through the Avalon-Airport Supabase project. Plain HTTPS, no new dependency; the sign-in session is kept in the Keychain.

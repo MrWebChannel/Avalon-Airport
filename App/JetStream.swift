@@ -58,12 +58,15 @@ final class JetStream {
         var userId: String
         var email: String
         var displayName: String
+        var username: String?
     }
 
     private(set) var session: Session?
     private(set) var contacts: [JetStreamContact] = []
     private(set) var messages: [LoungeChatMessage] = []
     private(set) var lastCheck: Date?
+    /// Optional profile photo. Kept on this device only: Avalon never sends images through Jet-Stream.
+    private(set) var profilePhoto: Data?
     var unread = 0
     var errorMessage: String?
     var noticeMessage: String?
@@ -71,39 +74,86 @@ final class JetStream {
     var isSignedIn: Bool { session != nil }
     var myId: String? { session?.userId }
     var myName: String { session?.displayName ?? "Me" }
+    var myUsername: String? { session?.username }
 
     private var checking = false
     private let sessionAccount = "session"
     private var storeURL: URL { URL.documentsDirectory.appending(path: "avalon-lounge.json") }
+    private var photoURL: URL { URL.documentsDirectory.appending(path: "avalon-profile-photo.jpg") }
 
     init() {
         if let data = Keychain.load(account: sessionAccount) {
             session = try? JSONDecoder().decode(Session.self, from: data)
         }
         loadStore()
+        profilePhoto = try? Data(contentsOf: photoURL)
     }
 
     // MARK: Account
 
-    func signUp(email: String, password: String, displayName: String) async {
+    /// Creates the Jet-Stream account. Returns true when the account exists (signed in, or waiting on email confirmation).
+    @discardableResult
+    func signUp(email: String, password: String, displayName: String, username: String = "") async -> Bool {
         do {
             let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let handle = Self.normalizedUsername(username)
+            var meta: [String: String] = ["display_name": name.isEmpty ? email : name]
+            if !handle.isEmpty { meta["username"] = handle }
             let payload: [String: Any] = [
                 "email": email.trimmingCharacters(in: .whitespaces),
                 "password": password,
-                "data": ["display_name": name.isEmpty ? email : name]
+                "data": meta
             ]
             let body = try JSONSerialization.data(withJSONObject: payload)
             let data = try await send("auth/v1/signup", method: "POST", body: body, auth: false)
             let reply = try JSONDecoder().decode(AuthReply.self, from: data)
             if reply.access_token != nil {
                 try adopt(reply, fallbackName: name)
+                session?.username = handle.isEmpty ? nil : handle
+                saveSession()
             } else {
                 noticeMessage = "Account created. Confirm the email Supabase sent, then sign in."
             }
+            return true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = Self.friendly(error)
+            return false
         }
+    }
+
+    /// Lowercase letters, digits, dot and underscore, 3 to 20 characters (the server enforces the same rule).
+    static func normalizedUsername(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "@")).lowercased()
+    }
+
+    static func isValidUsername(_ text: String) -> Bool {
+        let handle = normalizedUsername(text)
+        return (3...20).contains(handle.count) && handle.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "_" || $0 == ".") }
+    }
+
+    /// Asks Jet-Stream whether a username is free. nil when the check could not run (offline).
+    func usernameAvailable(_ username: String) async -> Bool? {
+        guard Self.isValidUsername(username),
+              let body = try? JSONSerialization.data(withJSONObject: ["p_username": Self.normalizedUsername(username)]),
+              let data = try? await send("rest/v1/rpc/jetstream_username_available", method: "POST", body: body, auth: false)
+        else { return nil }
+        return try? JSONDecoder().decode(Bool.self, from: data)
+    }
+
+    /// Supabase's own wording for a few common failures, in plain language.
+    private static func friendly(_ error: Error) -> String {
+        let text = error.localizedDescription
+        if text.localizedCaseInsensitiveContains("already registered") { return "An account already uses that email. Sign in instead." }
+        if text.localizedCaseInsensitiveContains("database error saving new user") { return "That username was just taken. Pick another." }
+        return text
+    }
+
+    // MARK: Profile photo (on this device only)
+
+    func setProfilePhoto(_ data: Data?) {
+        profilePhoto = data
+        if let data { try? data.write(to: photoURL, options: [.atomic, .completeFileProtection]) }
+        else { try? FileManager.default.removeItem(at: photoURL) }
     }
 
     func signIn(email: String, password: String) async {
@@ -124,6 +174,7 @@ final class JetStream {
     func signOut() {
         session = nil
         Keychain.delete(account: sessionAccount)
+        setProfilePhoto(nil)
     }
 
     private func adopt(_ reply: AuthReply, fallbackName: String?) throws {
@@ -140,26 +191,27 @@ final class JetStream {
     private func loadMyName() async {
         guard let me = myId else { return }
         if let data = try? await send("rest/v1/profiles", query: [
-                URLQueryItem(name: "select", value: "display_name"), URLQueryItem(name: "id", value: "eq.\(me)")]),
-           let rows = try? JSONDecoder().decode([ProfileRow].self, from: data),
-           let name = rows.first?.display_name, !name.isEmpty {
-            session?.displayName = name
+                URLQueryItem(name: "select", value: "display_name,username"), URLQueryItem(name: "id", value: "eq.\(me)")]),
+           let row = try? JSONDecoder().decode([ProfileRow].self, from: data).first {
+            if let name = row.display_name, !name.isEmpty { session?.displayName = name }
+            session?.username = row.username
             saveSession()
         }
     }
 
     // MARK: Contacts
 
+    /// Adds someone by exact email or username (with or without @).
     func addContact(email: String) async {
         do {
-            let body = try JSONSerialization.data(withJSONObject: ["p_email": email])
+            let body = try JSONSerialization.data(withJSONObject: ["p_email": email.trimmingCharacters(in: .whitespaces)])
             let data = try await send("rest/v1/rpc/jetstream_find_user", method: "POST", body: body)
             guard let found = try JSONDecoder().decode([ProfileRow].self, from: data).first, let id = found.id else {
-                errorMessage = "No Avalon account uses that email yet. Ask them to create one in the Lounge."
+                errorMessage = "No Avalon account matches that email or username yet. Ask them to set up Avalon first."
                 return
             }
             guard id != myId else { errorMessage = "That's your own account"; return }
-            upsertContact(JetStreamContact(id: id, name: found.display_name ?? email, email: email))
+            upsertContact(JetStreamContact(id: id, name: found.display_name ?? email, email: email.contains("@") && !email.hasPrefix("@") ? email : nil))
             noticeMessage = "\(found.display_name ?? email) added to the Lounge"
         } catch {
             errorMessage = error.localizedDescription
@@ -358,6 +410,7 @@ private struct AuthReply: Decodable {
 private struct ProfileRow: Decodable {
     var id: String?
     var display_name: String?
+    var username: String?
 }
 
 private struct MessageRow: Decodable {
